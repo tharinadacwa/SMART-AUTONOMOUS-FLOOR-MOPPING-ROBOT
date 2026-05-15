@@ -1,0 +1,15 @@
+Added Pin To Net: NetName=NetC43_2 Pin=D3-1
+Added Pin To Net: NetName=NetC40_2 Pin=D4-1
+Added Pin To Net: NetName=NetC42_2 Pin=D5-1
+Added Pin To Net: NetName=NetC39_2 Pin=D6-1
+Added Pin To Net: NetName=NetC41_2 Pin=D7-1
+Added Pin To Net: NetName=NetC39_2 Pin=U3-11
+Added Pin To Net: NetName=NetC42_2 Pin=U3-12
+Added Pin To Net: NetName=NetC40_2 Pin=U3-13
+Added Pin To Net: NetName=NetC43_2 Pin=U3-14
+Added Pin To Net: NetName=NetC41_2 Pin=U3-15
+Change Net Name : Old Net Name=NetC39_2 New Net Name=CELL_4S_ADC
+Change Net Name : Old Net Name=NetC40_2 New Net Name=CELL_2S_ADC
+Change Net Name : Old Net Name=NetC41_2 New Net Name=BAT_ADC
+Change Net Name : Old Net Name=NetC42_2 New Net Name=CELL_3S_ADC
+Change Net Name : Old Net Name=NetC43_2 New Net Name=CELL_1S_ADC
