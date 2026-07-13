@@ -1,0 +1,8 @@
+../Core/Inc/stm32g0xx_ll_bus.h:222:22:LL_AHB1_GRP1_EnableClock	24	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:30:15:USBPD_HW_GetUSPDInstance	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:39:22:USBPD_HW_Init_DMARxInstance	72	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:87:6:USBPD_HW_DeInit_DMARxInstance	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:92:22:USBPD_HW_Init_DMATxInstance	72	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:137:6:USBPD_HW_DeInit_DMATxInstance	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:142:10:USBPD_HW_GetRpResistorValue	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_hw.c:148:6:USBPD_HW_SetFRSSignalling	16	static

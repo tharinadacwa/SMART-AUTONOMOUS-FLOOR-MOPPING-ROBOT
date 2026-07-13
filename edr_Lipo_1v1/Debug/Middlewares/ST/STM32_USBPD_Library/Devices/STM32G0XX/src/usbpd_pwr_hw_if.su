@@ -1,0 +1,4 @@
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_pwr_hw_if.c:42:21:HW_IF_PWR_SetVoltage	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_pwr_hw_if.c:63:10:HW_IF_PWR_GetVoltage	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_pwr_hw_if.c:68:9:HW_IF_PWR_GetCurrent	16	static
+../Middlewares/ST/STM32_USBPD_Library/Devices/STM32G0XX/src/usbpd_pwr_hw_if.c:104:23:HW_IF_PWR_VBUSIsEnabled	16	static

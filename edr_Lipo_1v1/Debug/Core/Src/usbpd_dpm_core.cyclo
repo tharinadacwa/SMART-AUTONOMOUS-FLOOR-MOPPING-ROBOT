@@ -1,0 +1,11 @@
+../Core/Src/usbpd_dpm_core.c:82:21:USBPD_DPM_InitCore	4
+../Core/Src/usbpd_dpm_core.c:182:21:USBPD_DPM_InitOS	2
+../Core/Src/usbpd_dpm_core.c:218:6:USBPD_DPM_Run	1
+../Core/Src/usbpd_dpm_core.c:259:6:USBPD_DPM_TimerCounter	2
+../Core/Src/usbpd_dpm_core.c:284:13:USBPD_PE_TaskWakeUp	1
+../Core/Src/usbpd_dpm_core.c:293:13:USBPD_DPM_CADTaskWakeUp	1
+../Core/Src/usbpd_dpm_core.c:303:6:USBPD_PE_Task	1
+../Core/Src/usbpd_dpm_core.c:321:6:USBPD_CAD_Task	1
+../Core/Src/usbpd_dpm_core.c:335:6:USBPD_TRACE_TX_Task	1
+../Core/Src/usbpd_dpm_core.c:353:6:USBPD_DPM_CADCallback	8
+../Core/Src/usbpd_dpm_core.c:391:13:DPM_ManageAttachedState	4

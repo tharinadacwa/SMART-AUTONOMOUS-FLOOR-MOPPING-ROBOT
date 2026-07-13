@@ -1,0 +1,17 @@
+../Core/Inc/stm32g0xx_ll_dma.h:531:22:LL_DMA_ConfigTransfer	32	static
+../Core/Inc/stm32g0xx_ll_dma.h:899:22:LL_DMA_SetDataLength	32	static
+../Core/Inc/stm32g0xx_ll_dma.h:987:22:LL_DMA_SetMemoryAddress	32	static
+../Core/Inc/stm32g0xx_ll_dma.h:1010:22:LL_DMA_SetPeriphAddress	32	static
+../Core/Inc/stm32g0xx_ll_dma.h:1224:22:LL_DMA_SetPeriphRequest	24	static
+../Core/Inc/stm32g0xx_ll_dma.h:1635:22:LL_DMA_ClearFlag_GI1	16	static
+../Core/Inc/stm32g0xx_ll_dma.h:1646:22:LL_DMA_ClearFlag_GI2	16	static
+../Core/Inc/stm32g0xx_ll_dma.h:1657:22:LL_DMA_ClearFlag_GI3	16	static
+../Core/Inc/stm32g0xx_ll_dma.h:1668:22:LL_DMA_ClearFlag_GI4	16	static
+../Core/Inc/stm32g0xx_ll_dma.h:1679:22:LL_DMA_ClearFlag_GI5	16	static
+../Core/Inc/stm32g0xx_ll_dma.h:1690:22:LL_DMA_ClearFlag_GI6	16	static
+../Core/Inc/stm32g0xx_ll_dma.h:1701:22:LL_DMA_ClearFlag_GI7	16	static
+../Core/Inc/stm32g0xx_ll_bus.h:290:22:LL_AHB1_GRP1_ForceReset	16	static
+../Core/Inc/stm32g0xx_ll_bus.h:312:22:LL_AHB1_GRP1_ReleaseReset	16	static
+../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_dma.c:131:13:LL_DMA_DeInit	24	static
+../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_dma.c:254:13:LL_DMA_Init	24	static
+../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_dma.c:322:6:LL_DMA_StructInit	16	static
