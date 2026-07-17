@@ -1,0 +1,6 @@
+../Core/Src/minibot_protocol.c:11:9:MB_Crc8	4
+../Core/Src/minibot_protocol.c:24:12:hexval	7
+../Core/Src/minibot_protocol.c:41:13:parse_payload	9
+../Core/Src/minibot_protocol.c:71:6:MB_ProtoRxByte	14
+../Core/Src/minibot_protocol.c:127:10:MB_ProtoBuildFeedback	5
+../Core/Src/minibot_protocol.c:144:10:MB_ProtoBuildSimple	3

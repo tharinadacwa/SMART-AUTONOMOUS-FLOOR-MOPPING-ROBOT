@@ -1,0 +1,15 @@
+../Core/Src/minibot_motion.c:61:21:clampf	3
+../Core/Src/minibot_motion.c:66:13:mb_tx	4
+../Core/Src/minibot_motion.c:81:13:mb_profile_update	12
+../Core/Src/minibot_motion.c:158:6:MB_StepISR	6
+../Core/Src/minibot_motion.c:191:6:MB_UartRxByteISR	4
+../Core/Src/minibot_motion.c:213:6:MB_UartErrorISR	1
+../Core/Src/minibot_motion.c:229:16:mb_clamp_sps	3
+../Core/Src/minibot_motion.c:236:13:mb_enable	2
+../Core/Src/minibot_motion.c:249:13:mb_handle	8
+../Core/Src/minibot_motion.c:296:6:MB_EmergencyStop	1
+../Core/Src/minibot_motion.c:314:6:MB_Init	1
+../Core/Src/minibot_motion.c:329:6:MB_Task	6
+../Core/Src/minibot_motion.c:377:10:MB_GetStepsLeft	1
+../Core/Src/minibot_motion.c:378:10:MB_GetStepsRight	1
+../Core/Src/minibot_motion.c:379:10:MB_GetFlags	1
