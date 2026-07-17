@@ -1,0 +1,6 @@
+../Core/Src/minibot_protocol.c:11:9:MB_Crc8	24	static
+../Core/Src/minibot_protocol.c:24:12:hexval	16	static
+../Core/Src/minibot_protocol.c:41:13:parse_payload	32	static
+../Core/Src/minibot_protocol.c:71:6:MB_ProtoRxByte	40	static
+../Core/Src/minibot_protocol.c:127:10:MB_ProtoBuildFeedback	128	static
+../Core/Src/minibot_protocol.c:144:10:MB_ProtoBuildSimple	40	static
