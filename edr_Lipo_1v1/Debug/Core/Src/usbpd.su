@@ -1,8 +1,0 @@
-../Core/Src/usbpd.c:79:6:MX_USBPD_Init	40	static
-../Core/Src/usbpd.c:116:9:Get_Input_Power_Ready	8	static
-../Core/Src/usbpd.c:124:10:Get_Max_Input_Power	8	static
-../Core/Src/usbpd.c:132:10:Get_Max_Input_Current	8	static
-../Core/Src/usbpd.c:140:10:Get_Input_Voltage	8	static
-../Core/Src/usbpd.c:157:13:Parse_Source_PDOs	16	static
-../Core/Src/usbpd.c:192:6:vUSBPD_User	56	static
-../Core/Src/usbpd.c:366:9:check_if_power_ready	8	static
