@@ -1,3 +1,0 @@
-../Core/Src/error.c:16:10:Get_Error_State	8	static
-../Core/Src/error.c:20:6:Set_Error_State	16	static
-../Core/Src/error.c:24:6:Clear_Error_State	16	static

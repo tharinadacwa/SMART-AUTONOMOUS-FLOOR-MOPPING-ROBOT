@@ -1,8 +1,0 @@
-../Drivers/STM32G0xx_HAL_Driver/Inc/stm32g0xx_ll_ucpd.h:353:22:LL_UCPD_Disable	1
-../Core/Inc/stm32g0xx_ll_bus.h:423:22:LL_APB1_GRP1_EnableClock	1
-../Core/Inc/stm32g0xx_ll_bus.h:533:22:LL_APB1_GRP1_DisableClock	1
-../Core/Inc/stm32g0xx_ll_bus.h:587:22:LL_APB1_GRP1_ForceReset	1
-../Core/Inc/stm32g0xx_ll_bus.h:641:22:LL_APB1_GRP1_ReleaseReset	1
-../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_ucpd.c:80:13:LL_UCPD_DeInit	3
-../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_ucpd.c:128:13:LL_UCPD_Init	3
-../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_ucpd.c:160:6:LL_UCPD_StructInit	1

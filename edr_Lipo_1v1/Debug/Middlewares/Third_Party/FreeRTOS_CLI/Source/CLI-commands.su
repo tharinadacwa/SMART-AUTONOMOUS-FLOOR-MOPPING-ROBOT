@@ -1,6 +1,0 @@
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:125:6:vRegisterCLICommands	8	static
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:143:19:prvStatsCommand	432	static,ignoring_inline_asm
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:234:19:prvCalibrateCommand	48	static,ignoring_inline_asm
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:267:19:prvWriteOTPFlashCommand	40	static,ignoring_inline_asm
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:285:19:prvTaskStatsCommand	32	static,ignoring_inline_asm
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:324:20:prvRunTimeStatsCommand	32	static,ignoring_inline_asm
