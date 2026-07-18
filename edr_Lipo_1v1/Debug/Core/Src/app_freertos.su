@@ -1,2 +1,0 @@
-../Core/Src/app_freertos.c:92:13:configureTimerForRunTimeStats	8	static
-../Core/Src/app_freertos.c:97:22:getRunTimeCounterValue	8	static

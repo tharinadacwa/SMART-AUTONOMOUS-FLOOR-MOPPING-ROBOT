@@ -1,3 +1,0 @@
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/UARTCommandConsole.c:73:6:prvUARTCommandConsoleTask	13
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/UARTCommandConsole.c:166:6:UART_Transfer	4
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/UARTCommandConsole.c:180:6:HAL_UART_TxCpltCallback	2

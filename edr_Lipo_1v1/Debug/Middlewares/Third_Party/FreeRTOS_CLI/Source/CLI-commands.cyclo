@@ -1,6 +1,0 @@
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:125:6:vRegisterCLICommands	1
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:143:19:prvStatsCommand	3
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:234:19:prvCalibrateCommand	2
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:267:19:prvWriteOTPFlashCommand	2
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:285:19:prvTaskStatsCommand	3
-../Middlewares/Third_Party/FreeRTOS_CLI/Source/CLI-commands.c:324:20:prvRunTimeStatsCommand	3
