@@ -1,0 +1,6 @@
+../Middlewares/Third_Party/FreeRTOS_CLI/Source/FreeRTOS_CLI.c:105:12:FreeRTOS_CLIRegisterCommand	4
+../Middlewares/Third_Party/FreeRTOS_CLI/Source/FreeRTOS_CLI.c:146:12:FreeRTOS_CLIProcessCommand	12
+../Middlewares/Third_Party/FreeRTOS_CLI/Source/FreeRTOS_CLI.c:221:7:FreeRTOS_CLIGetOutputBuffer	1
+../Middlewares/Third_Party/FreeRTOS_CLI/Source/FreeRTOS_CLI.c:227:13:FreeRTOS_CLIGetParameter	11
+../Middlewares/Third_Party/FreeRTOS_CLI/Source/FreeRTOS_CLI.c:283:19:prvHelpCommand	3
+../Middlewares/Third_Party/FreeRTOS_CLI/Source/FreeRTOS_CLI.c:316:15:prvGetNumberOfParameters	5

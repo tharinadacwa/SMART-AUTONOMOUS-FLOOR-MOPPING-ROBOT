@@ -1,0 +1,11 @@
+../Core/Inc/stm32g0xx_ll_gpio.h:279:22:LL_GPIO_SetPinMode	24	static
+../Core/Inc/stm32g0xx_ll_gpio.h:347:22:LL_GPIO_SetPinOutputType	24	static
+../Core/Inc/stm32g0xx_ll_gpio.h:418:22:LL_GPIO_SetPinSpeed	24	static
+../Core/Inc/stm32g0xx_ll_gpio.h:487:22:LL_GPIO_SetPinPull	24	static
+../Core/Inc/stm32g0xx_ll_gpio.h:550:22:LL_GPIO_SetAFPin_0_7	24	static
+../Core/Inc/stm32g0xx_ll_gpio.h:611:22:LL_GPIO_SetAFPin_8_15	24	static
+../Core/Inc/stm32g0xx_ll_bus.h:1065:22:LL_IOP_GRP1_ForceReset	16	static
+../Core/Inc/stm32g0xx_ll_bus.h:1086:22:LL_IOP_GRP1_ReleaseReset	16	static
+../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_gpio.c:101:13:LL_GPIO_DeInit	24	static
+../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_gpio.c:155:13:LL_GPIO_Init	24	static
+../Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_ll_gpio.c:231:6:LL_GPIO_StructInit	16	static

@@ -1,0 +1,12 @@
+../Core/Src/battery.c:39:6:Balance_Battery	18
+../Core/Src/battery.c:100:6:Balance_Connection_State	15
+../Core/Src/battery.c:173:6:Cell_Voltage_Safety_Check	5
+../Core/Src/battery.c:201:6:Battery_Connection_State	6
+../Core/Src/battery.c:238:6:Balancing_GPIO_Control	5
+../Core/Src/battery.c:272:6:MCU_Temperature_Safety_Check	4
+../Core/Src/battery.c:285:9:Get_Balance_Connection_State	1
+../Core/Src/battery.c:294:9:Get_Balancing_State	2
+../Core/Src/battery.c:306:9:Get_Requires_Charging_State	1
+../Core/Src/battery.c:315:9:Get_Number_Of_Cells	1
+../Core/Src/battery.c:324:9:Get_XT60_Connection_State	1
+../Core/Src/battery.c:329:9:Get_Cell_Over_Voltage_State	1
