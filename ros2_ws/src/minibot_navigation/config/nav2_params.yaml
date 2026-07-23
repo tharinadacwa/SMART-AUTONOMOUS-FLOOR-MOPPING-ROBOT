@@ -1,0 +1,446 @@
+# =============================================================================
+#  nav2_params.yaml -- 380 mm circular stepper cleaning robot, 20 RPM cap.
+#
+#  ############################ THE VELOCITY CHAIN ############################
+#  Every layer must be <= the layer below it. If any layer asks for more than the
+#  one under it can deliver, the excess is SILENTLY CLIPPED -- and then the
+#  planner believes the robot went somewhere it did not. That single class of bug
+#  causes more "my odometry is drifting" reports than anything else.
+#
+#     Nav2 FollowPath  <=  velocity_smoother  <=  diff_drive_controller
+#        <=  Pi-side clamp (max_step_rate)  <=  STM32 clamp (MB_MAX_STEP_RATE)
+#        <=  what the motor can actually do without skipping
+#
+#  ALL OF THESE NUMBERS ARE GENERATED. Edit robot.yaml, run
+#  tools/generate_config.py, and paste. Never hand-tune one file in isolation.
+#
+#  ##### REVISION 2 -- REBUILT FROM MEASURED HARDWARE #####
+#  Rev 1 used wheel_radius 0.190 and wheel_separation 0.300. BOTH WERE WRONG.
+#  Every velocity and threshold below changed as a result.
+#
+#  DERIVED FROM: wheel_radius 0.0336 (67.2 mm dia), wheel_separation 0.400, 5-20 RPM
+#     v_max     = 2*pi*(20/60)*0.0336  = 0.0704 m/s
+#     v_min     = 2*pi*(5/60)*0.0336   = 0.0176 m/s
+#     omega_max = 2*v_max/0.400       = 0.3519 rad/s
+#     a_max     = v_max/0.5             = 0.1407 m/s^2
+#     alpha_max = omega_max/0.5         = 0.7037 rad/s^2
+#     180 deg spin in place             = 8.93 SECONDS  <-- this robot is SLOW
+#
+#  ##### robot_radius IS 0.210, NOT 0.190 #####
+#  The body is 380 mm across but the WHEELS SPAN 410-420 mm. The wheels are the
+#  WIDEST PART OF THE ROBOT. Plan against 0.190 and Nav2 will confidently drive
+#  the wheels into walls it believes it clears.
+#
+#  ################## WHY RegulatedPurePursuit AND NOT MPPI ##################
+#  1. COVERAGE NEEDS TIGHT PATH ADHERENCE. MPPI optimises a cost function and
+#     will happily cut a corner by 8 cm. At 19 cm lane spacing, an 8 cm deviation
+#     is an uncleaned stripe. RPP follows the line.
+#  2. RPP does proper ROTATE-IN-PLACE at lane ends (use_rotate_to_heading). This
+#     robot does ~19 of those per room.
+#  3. MPPI at batch 2000 x 56 steps x 20 Hz is heavy, and Nav2 runs ON THE PI --
+#     a 15-minute cleaning run must not depend on a laptop's Wi-Fi staying up.
+# =============================================================================
+
+amcl:
+  ros__parameters:
+    # ####################### WHY AMCL AND NOT slam_toolbox #######################
+    #  slam_toolbox's own README says of its localization mode: "it does require
+    #  quite a bit of tuning ... and NEEDS HIGH QUALITY ODOMETRY", and recommends
+    #  AMCL for most users.
+    #
+    #  This robot has NO ENCODERS. Its odometry is open-loop step counts. That is,
+    #  by definition, not "high quality odometry".
+    #
+    #  AMCL is right precisely BECAUSE it does not assume good odometry: its motion
+    #  model has explicit noise parameters (alpha1..alpha5) where you TELL it how
+    #  bad yours is, and the particle cloud spreads to compensate. A scan matcher
+    #  has no such release valve.
+    # ############################################################################
+
+    # THE MOTION MODEL NOISE. This is where you tell AMCL the truth.
+    # Open-loop steppers are EXCELLENT at translation (every step was counted) and
+    # MEDIOCRE at rotation (any wheel_separation error goes straight into yaw, and
+    # this robot makes ~19 in-place turns per room). So: HIGH rotation noise, LOW
+    # translation noise. That asymmetry IS the encoding of "no encoders".
+    alpha1: 0.15       # rotation noise from rotation       <- HIGH: the weak axis
+    alpha2: 0.10       # rotation noise from translation
+    alpha3: 0.05       # translation noise from translation <- LOW: steps are exact
+    alpha4: 0.10       # translation noise from rotation
+    alpha5: 0.05
+
+    base_frame_id: "base_link"
+    global_frame_id: "map"
+    odom_frame_id: "odom"
+    scan_topic: scan
+
+    laser_model_type: "likelihood_field"
+    laser_max_range: 12.0        # RPLIDAR C1
+    laser_min_range: 0.15
+    laser_likelihood_max_dist: 2.0
+    max_beams: 90
+    sigma_hit: 0.2
+    z_hit: 0.9
+    z_rand: 0.1
+    z_max: 0.05
+    z_short: 0.05
+    lambda_short: 0.1
+    beam_skip_distance: 0.5
+    beam_skip_error_threshold: 0.9
+    beam_skip_threshold: 0.3
+    do_beamskip: false
+
+    max_particles: 1000
+    min_particles: 300
+    pf_err: 0.05
+    pf_z: 0.99
+    resample_interval: 1
+    recovery_alpha_fast: 0.1
+    recovery_alpha_slow: 0.001
+
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
+    save_pose_rate: 0.5
+    tf_broadcast: true
+    transform_tolerance: 1.0
+
+    # CRITICAL: the stock 0.25 m / 0.2 rad thresholds mean AMCL only corrects the
+    # pose after the robot has already moved 25 cm. With 19 cm lane spacing, that
+    # is more than a full lane of pure dead-reckoning between corrections. Update
+    # far more often. It costs CPU; it buys you the lane spacing actually working.
+    # At 0.070 m/s the robot covers 5 cm in 0.7 s, so a 0.05 m threshold
+    # means AMCL corrects roughly every 0.7 seconds. That is the right
+    # trade for a robot whose lane spacing is 19 cm.
+    update_min_d: 0.05
+    update_min_a: 0.05
+
+bt_navigator:
+  ros__parameters:
+    global_frame: map
+    robot_base_frame: base_link
+    odom_topic: /odom
+    bt_loop_duration: 10
+    default_server_timeout: 2000
+    wait_for_service_timeout: 1000
+    # A coverage chunk can legitimately take minutes. Do not lower this.
+    action_server_result_timeout: 900.0
+    navigators: ["navigate_to_pose", "navigate_through_poses"]
+    navigate_to_pose:
+      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
+    navigate_through_poses:
+      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+
+    # CUSTOM BEHAVIOR TREES. The stock Nav2 recovery ladder ends in Spin, and on
+    # a coverage robot a Spin ABANDONS THE LANE IT IS CURRENTLY SWEEPING -- Nav2
+    # replans from the new pose and just carries on, leaving an uncleaned stripe
+    # that nothing reports. See behavior_trees/*.xml for the full argument.
+    # These are absolute paths substituted by clean.launch.py.
+    default_nav_through_poses_bt_xml: ""
+    default_nav_to_pose_bt_xml: ""
+    error_code_names:
+      - compute_path_error_code
+      - follow_path_error_code
+
+controller_server:
+  ros__parameters:
+    controller_frequency: 10.0
+
+    # ##### THESE WERE ACTIVELY BROKEN IN REV 1 #####
+    #   min_theta_velocity_threshold was 0.30, but omega_max is only 0.352 rad/s.
+    #   Nav2 would have classified EVERY rotation this robot can perform as
+    #   "stopped" -- the robot would simply never turn.
+    #   min_x_velocity_threshold was 0.05, but v_max is only 0.070 m/s -- that
+    #   is 71% of the entire speed range written off as "stopped".
+    # These are now set BELOW the 5 RPM floor (v_min 0.0176, w_min 0.0880).
+    min_x_velocity_threshold: 0.010
+    min_y_velocity_threshold: 0.500     # diff drive: no lateral motion, ever
+    min_theta_velocity_threshold: 0.050
+    failure_tolerance: 0.3
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+    use_realtime_priority: false
+
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      # THIS ROBOT TAKES 8.9 SECONDS TO TURN 180 DEGREES, making ZERO linear
+      # progress the whole time -- and it does that at the end of EVERY lane.
+      # The stock checker (0.5 m within 10 s) would call that a stall, abort the
+      # goal and fire a recovery on every single lane reversal.
+      # Allowance must comfortably exceed 8.9 s. At 0.070 m/s the robot
+      # covers 2 s worth of travel to move 0.15 m, so this is safe.
+      required_movement_radius: 0.15
+      movement_time_allowance: 45.0
+
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      # Coverage waypoints are 0.15 m apart, so a loose tolerance would let the
+      # robot skip them entirely and leave gaps.
+      xy_goal_tolerance: 0.05
+      yaw_goal_tolerance: 0.50
+
+    FollowPath:
+      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+
+      desired_linear_vel: 0.0704           # = v_max (20 RPM)
+      min_approach_linear_velocity: 0.0176  # = v_min (5 RPM), your stated floor
+      approach_velocity_scaling_dist: 0.10
+
+      # LOOKAHEAD SCALES WITH SPEED, and this robot is SLOW.
+      # Rev 1's 0.40 m lookahead at 0.070 m/s is 5.7 SECONDS ahead of the
+      # robot -- it would smooth straight through the tight lane-end turns that
+      # coverage depends on. 0.20 m is ~3 s, which is the right feel.
+      lookahead_dist: 0.35
+      min_lookahead_dist: 0.25
+      max_lookahead_dist: 0.50
+      use_velocity_scaled_lookahead_dist: false
+
+      use_rotate_to_heading: true
+      rotate_to_heading_angular_vel: 0.2991   # 85% of omega_max (0.3519)
+      rotate_to_heading_min_angle: 0.75
+      max_angular_accel: 0.7037             # = alpha_max
+      allow_reversing: false                # required with use_rotate_to_heading
+
+      use_collision_detection: true
+      max_allowed_time_to_collision_up_to_carrot: 2.0
+
+      use_regulated_linear_velocity_scaling: true
+      regulated_linear_scaling_min_radius: 0.30
+      regulated_linear_scaling_min_speed: 0.0176
+      # LEAVE THIS OFF. Cost-regulated scaling slows the robot near obstacles --
+      # but a cleaning robot is SUPPOSED to drive right along the wall on the edge
+      # pass. Turn it on and the edge pass crawls, or stalls the progress checker.
+      use_cost_regulated_linear_velocity_scaling: false
+
+      use_fixed_curvature_lookahead: false
+      curvature_lookahead_dist: 0.20
+      transform_tolerance: 0.20
+      max_robot_pose_search_dist: 10.0
+      stateful: true
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 3.0
+      publish_frequency: 1.0
+      global_frame: odom
+      robot_base_frame: base_link
+      rolling_window: true
+      width: 3
+      height: 3
+      # 3 cm cells, not the usual 5. This robot works within centimetres of walls
+      # on the edge pass, and a 5 cm cell is a quarter of the lane spacing.
+      resolution: 0.05
+
+      # CIRCULAR ROBOT -> a scalar radius, not a footprint polygon. For a disc,
+      # inscribed == circumscribed, so Nav2 knows it can rotate anywhere it can
+      # stand. That is a real advantage a rectangular robot does not get.
+      #
+      # ##### 0.210, NOT 0.190 #####
+      # The BODY is 380 mm across, but the WHEELS SPAN 410-420 mm. The wheels are
+      # the widest part of this robot. Nav2 must plan against the widest extent
+      # or it will drive the WHEELS into walls it believes the body clears.
+      robot_radius: 0.210
+      footprint_padding: 0.0
+
+      plugins: ["obstacle_layer", "inflation_layer"]
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 12.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 4.0
+          obstacle_min_range: 0.0
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        # Only 3 cm beyond robot_radius (0.210 + 0.03). A cleaning robot MUST be
+        # able to drive with its widest point 3 cm off the wall -- that is the
+        # entire point of the edge pass. Nav2's stock value is 0.70 m, which makes
+        # every wall-adjacent cell expensive and renders the edge pass unplannable.
+        inflation_radius: 0.300
+        cost_scaling_factor: 3.0
+        inflate_unknown: false
+        inflate_around_unknown: true
+
+      always_send_full_costmap: False
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: base_link
+      resolution: 0.05
+      track_unknown_space: true
+
+      robot_radius: 0.210      # wheels, not body. See local_costmap.
+      footprint_padding: 0.0
+
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 12.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 4.0
+          obstacle_min_range: 0.0
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        inflation_radius: 0.300
+        cost_scaling_factor: 3.0
+        inflate_unknown: false
+        inflate_around_unknown: true
+
+      always_send_full_costmap: False
+
+map_server:
+  ros__parameters:
+    yaml_filename: "/home/ubuntu/ros2_ws/maps/clidar_room_trial1.yaml"
+
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 0.5
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      # Coverage waypoints sit ~3 cm outside the lethal ring. Give the planner a
+      # little slack so it does not reject them outright.
+      tolerance: 0.15
+      use_astar: true
+      # NEVER plan through unknown space on a cleaning run. Unknown could be a
+      # staircase. Mapping is what turns unknown into known -- and that already
+      # happened, offline.
+      allow_unknown: false
+
+smoother_server:
+  ros__parameters:
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: True
+
+behavior_server:
+  ros__parameters:
+    local_costmap_topic: local_costmap/costmap_raw
+    global_costmap_topic: global_costmap/costmap_raw
+    local_footprint_topic: local_costmap/published_footprint
+    global_footprint_topic: global_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    spin:
+      plugin: "nav2_behaviors::Spin"
+      max_rotational_vel: 0.2991
+      min_rotational_vel: 0.0880
+      rotational_acc_lim: 0.7037
+      simulate_ahead_time: 2.0
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors::DriveOnHeading"
+    assisted_teleop:
+      plugin: "nav2_behaviors::AssistedTeleop"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+    local_frame: odom
+    global_frame: map
+    robot_base_frame: base_link
+    transform_tolerance: 0.20
+    simulate_ahead_time: 2.0
+    # RECOVERY BEHAVIOURS MUST RESPECT THE RPM CAP TOO. This is a very common way
+    # to accidentally command a speed the motors cannot deliver: everything else
+    # is tuned, and then a recovery spin skips 200 steps and ruins the run.
+    max_rotational_vel: 0.2991    # 85% of omega_max (0.3519)
+    min_rotational_vel: 0.0880    # = omega_min (5 RPM floor)
+    rotational_acc_lim: 0.7037
+
+waypoint_follower:
+  ros__parameters:
+    loop_rate: 20
+    stop_on_failure: false
+    action_server_result_timeout: 900.0
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 0
+
+velocity_smoother:
+  ros__parameters:
+    smoothing_frequency: 20.0
+    scale_velocities: false
+    feedback: "OPEN_LOOP"
+    # [vx, vy, wz]
+    max_velocity: [0.0704, 0.0, 0.3519]
+    min_velocity: [-0.0704, 0.0, -0.3519]
+    max_accel:    [0.1407, 0.0, 0.7037]
+    max_decel:    [-0.1407, 0.0, -0.7037]
+    odom_topic: "odom"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+
+collision_monitor:
+  ros__parameters:
+    base_frame_id: "base_link"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "cmd_vel_smoothed"
+    cmd_vel_out_topic: "cmd_vel"
+    state_topic: "collision_monitor_state"
+    transform_tolerance: 0.2
+    source_timeout: 1.0
+    base_shift_correction: True
+    stop_pub_timeout: 2.0
+    polygons: ["FootprintApproach"]
+    FootprintApproach:
+      type: "polygon"
+      action_type: "approach"
+      footprint_topic: "/local_costmap/published_footprint"
+      time_before_collision: 1.5
+      simulation_time_step: 0.1
+      min_points: 6
+      visualize: False
+      enabled: True
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "scan"
+      # Relative to base_link (the GROUND). The LIDAR sits 0.25 m up, so its
+      # rays are all at ~0.25 m. Anything below 0.05 m is floor return / noise.
+      min_height: 0.05
+      max_height: 2.0
+      enabled: True
+docking_server:
+  ros__parameters:
+    controller_frequency: 50.0
+    dock_plugins: ["dummy_dock"]
+    dummy_dock:
+      plugin: "opennav_docking::SimpleChargingDock"
+    docks: ["unused_dock"]
+    unused_dock:
+      type: "dummy_dock"
+      frame: map
+      pose: [0.0, 0.0, 0.0]

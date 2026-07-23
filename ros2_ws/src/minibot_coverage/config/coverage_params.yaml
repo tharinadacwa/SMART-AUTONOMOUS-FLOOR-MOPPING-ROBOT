@@ -1,0 +1,33 @@
+# =============================================================================
+#  coverage_params.yaml   [REVISION 2 -- MEASURED HARDWARE]
+#
+#  Geometry MUST match minibot_navigation/config/nav2_params.yaml robot_radius
+#  (0.210) and the erode_radius in docs/DERIVED_NUMBERS.md.
+# =============================================================================
+coverage_server:
+  ros__parameters:
+    path_file: ""              # supplied by the launch file
+    poses_per_goal: 12
+    goal_retries: 1
+    auto_start: false          # LEAVE FALSE. Verify AMCL converged first.
+    resume: false
+    checkpoint_file: "/tmp/minibot_coverage_progress.txt"
+    map_frame: "map"
+    base_frame: "base_link"
+
+    # ---- YOUR REAL CLEANING HEAD --------------------------------------------
+    #  Two brushes, 100 mm dia, centres 200 mm apart:
+    #      left  covers -0.150 .. -0.050
+    #      right covers +0.050 .. +0.150
+    #      TOTAL SWEPT WIDTH = 0.300 m   -> coverage_radius = 0.150
+    #      GAP IN THE MIDDLE = 0.100 m
+    #
+    #  !! The 100 mm middle gap is only OK if your suction inlet sits there. !!
+    #  If not, you have an uncleaned stripe down the centre of every lane and
+    #  this number is a LIE -- the "% swept" readout will overstate reality.
+    coverage_radius: 0.15      # HALF the swept width
+
+    return_to_dock: true
+    dock_x: 0.0
+    dock_y: 0.0
+    dock_yaw: 0.0

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- Top-level URDF. Assembled from the parts below.
+     Consumed by: robot_state_publisher (TF tree) and ros2_control_node
+                  (which reads the <ros2_control> block).                    -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="minibot">
+
+  <xacro:arg name="use_ros2_control" default="true"/>
+
+  <xacro:include filename="$(find minibot_description)/urdf/inertial_macros.xacro"/>
+  <xacro:include filename="$(find minibot_description)/urdf/base.xacro"/>
+  <xacro:include filename="$(find minibot_description)/urdf/lidar.xacro"/>
+  <xacro:include filename="$(find minibot_description)/urdf/imu.xacro"/>
+
+  <xacro:if value="$(arg use_ros2_control)">
+    <xacro:include filename="$(find minibot_description)/urdf/ros2_control.xacro"/>
+  </xacro:if>
+
+</robot>

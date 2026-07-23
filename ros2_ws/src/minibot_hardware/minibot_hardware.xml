@@ -1,0 +1,12 @@
+<library path="minibot_hardware">
+  <class name="minibot_hardware/StepperDiffDrive"
+         type="minibot_hardware::StepperDiffDrive"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control SystemInterface for a differential-drive base using NEMA-17
+      steppers + DRV8825 drivers commanded by an STM32F407 over a CRC-8 framed
+      UART link. Odometry comes from the STM32's exact step-pulse tally --
+      there are no encoders on this robot.
+    </description>
+  </class>
+</library>

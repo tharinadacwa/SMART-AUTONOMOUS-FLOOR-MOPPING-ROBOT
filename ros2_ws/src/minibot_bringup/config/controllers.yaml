@@ -1,0 +1,92 @@
+# =============================================================================
+#  controllers.yaml -- ros2_control controller_manager
+#
+#  LOADED BY   minibot_bringup/robot.launch.py -> ros2_control_node
+#
+#  ALL LIMITS ARE GENERATED from robot.yaml by tools/generate_config.py.
+#
+#  ##### REVISION 2 -- MEASURED HARDWARE #####
+#  Rev 1 used wheel_radius 0.190 / wheel_separation 0.300. BOTH WRONG.
+#  DERIVED FROM: wheel_radius 0.0336 (67.2 mm dia), wheel_separation 0.400, 5-20 RPM
+#     v_max = 0.0704 m/s   omega_max = 0.3519 rad/s   a_max = 0.1407 m/s^2
+#     180 deg spin in place = 8.93 SECONDS
+# =============================================================================
+
+controller_manager:
+  ros__parameters:
+    update_rate: 50   # Hz -- matches the STM32's 50 Hz feedback frame rate
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    diff_drive_controller:
+      type: diff_drive_controller/DiffDriveController
+
+diff_drive_controller:
+  ros__parameters:
+    left_wheel_names: ["left_wheel_joint"]
+    right_wheel_names: ["right_wheel_joint"]
+
+    # -------------------------------------------------------------------------
+    #  THE TWO MOST IMPORTANT NUMBERS ON THE ROBOT.
+    #    wheel_radius     -> every DISTANCE the robot believes it moved
+    #    wheel_separation -> every ANGLE the robot believes it turned
+    #  Measure them. Calibrate them (scripts/calibrate_odom.py). Then trust them.
+    # -------------------------------------------------------------------------
+    #  wheel_radius     -> every DISTANCE the robot believes it moved
+    #  wheel_separation -> every ANGLE  the robot believes it turned
+    #
+    #  MEASURE wheel_radius LOADED (robot's weight on the wheel). Rubber
+    #  compresses ~1 mm, and 1 mm on a 33.6 mm radius is a 3% odometry error
+    #  that compounds over an entire cleaning run.
+    #
+    #  Rev 1 had these as 0.190 / 0.300 -- a 5.65x and a 33% error respectively.
+    wheel_separation: 0.400
+    wheel_radius: 0.0336
+
+    wheel_separation_multiplier: 1.0
+    left_wheel_radius_multiplier: 1.0
+    right_wheel_radius_multiplier: 1.0
+
+    publish_rate: 50.0
+    odom_frame_id: odom
+    base_frame_id: base_link
+
+    # Step-count odometry is EXCELLENT in x (we counted every pulse) and MEDIOCRE
+    # in yaw (a ruler-measured wheel_separation goes straight into heading). Tell
+    # the EKF that: small x variance, larger yaw variance. It then leans on the
+    # gyro for heading, which is exactly what we want.
+    pose_covariance_diagonal:  [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+    twist_covariance_diagonal: [0.001, 0.001, 0.001, 0.001, 0.001, 0.03]
+
+    # false -> use the STM32's ACTUAL emitted step counts (which include whatever
+    # the jerk-limited profile really did during transients), not the commanded
+    # velocity. Open-loop integration of the command would drift every time Nav2
+    # asked for something the profile could not instantly deliver.
+    open_loop: false
+
+    # false -> robot_localization's EKF owns odom -> base_link.
+    # TWO publishers on one TF edge = the robot flickers between two poses.
+    enable_odom_tf: false
+
+    cmd_vel_timeout: 0.5
+
+    # ---- kinematic envelope (20 RPM cap) ----
+    linear.x.has_velocity_limits: true
+    linear.x.has_acceleration_limits: true
+    linear.x.has_jerk_limits: false
+    linear.x.max_velocity: 0.0704
+    linear.x.min_velocity: -0.0704
+    linear.x.max_acceleration: 0.1407
+    linear.x.max_jerk: 0.0
+    linear.x.min_jerk: 0.0
+
+    angular.z.has_velocity_limits: true
+    angular.z.has_acceleration_limits: true
+    angular.z.has_jerk_limits: false
+    angular.z.max_velocity: 0.3519
+    angular.z.min_velocity: -0.3519
+    angular.z.max_acceleration: 0.7037
+    angular.z.min_acceleration: -0.7037
+    angular.z.max_jerk: 0.0
+    angular.z.min_jerk: 0.0

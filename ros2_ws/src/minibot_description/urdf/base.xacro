@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================
+     base.xacro : chassis, two driven wheels, two casters.   [REVISION 2]
+
+     ##### REV 2: THE GEOMETRY CHANGED COMPLETELY #####
+       wheel radius     0.190 -> 0.0336   (67.2 mm DIAMETER with rubber)
+       wheel separation 0.300 -> 0.400    (centre-to-centre)
+     Rev 1's numbers were wrong. Every velocity in the project derived from them.
+
+     ##### THE WHEELS ARE THE WIDEST PART OF THE ROBOT #####
+       body   = 38 cm across
+       wheels = 42 cm across   <— WIDER
+     Nav2 gets robot_radius = 0.210 (the WHEELS), not 0.190 (the body). Plan
+     against the body and Nav2 will confidently drive the WHEELS into walls it
+     believes it clears. That single number is the difference between a robot
+     that hugs walls cleanly and one that grinds its tyres along them.
+
+     WHY CIRCULAR STILL MATTERS
+       For a disc, inscribed radius == circumscribed radius. The robot can rotate
+       in place ANYWHERE it can stand — so every point on the coverage path is
+       automatically a valid turning point. That is why coverage planning here is
+       tractable at all, and why Nav2 gets a scalar radius instead of a polygon.
+
+     FRAME CONVENTION
+       base_link      = midpoint of the wheel AXLE = the CENTRE OF ROTATION.
+                        It sits 0.0336 m (= wheel_radius) above the ground.
+       base_footprint = base_link projected onto the floor.
+
+     !! ALL GEOMETRY COMES FROM robot.yaml. If you change it there, change it
+        HERE too (xacro cannot read yaml), or run tools/generate_config.py and
+        copy from docs/DERIVED_NUMBERS.md.
+=========================================================================== -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ============ MUST MATCH robot.yaml ============ -->
+  <xacro:property name="wheel_radius"     value="0.0336"/>   <!-- 67.2 mm dia -->
+  <xacro:property name="wheel_separation" value="0.400"/>    <!-- centre-to-centre -->
+  <xacro:property name="body_radius"      value="0.190"/>    <!-- the chassis disc -->
+  <!-- =============================================== -->
+
+  <xacro:property name="body_height"      value="0.090"/>
+  <xacro:property name="body_mass"        value="5.400"/>   <!-- 6 kg total - wheels/casters -->
+  <xacro:property name="wheel_thickness"  value="0.026"/>
+  <xacro:property name="wheel_mass"       value="0.250"/>
+  <xacro:property name="wheel_offset_y"   value="${wheel_separation/2}"/>
+  <xacro:property name="caster_radius"    value="0.0168"/>  <!-- HALF wheel_radius -->
+  <xacro:property name="caster_offset_x"  value="0.150"/>
+
+  <material name="black"><color rgba="0.1 0.1 0.1 1"/></material>
+  <material name="orange"><color rgba="1 0.35 0 1"/></material>
+  <material name="white"><color rgba="1 1 1 1"/></material>
+  <material name="cyan"><color rgba="0 0.8 0.9 1"/></material>
+  <material name="green"><color rgba="0.2 0.8 0.2 1"/></material>
+
+  <link name="base_link"/>
+
+  <!-- base_link is at the wheel AXLE, so the floor is wheel_radius BELOW it. -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="base_footprint"/>
+    <origin xyz="0 0 ${-wheel_radius}" rpy="0 0 0"/>
+  </joint>
+  <link name="base_footprint"/>
+
+  <joint name="body_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="body"/>
+    <!-- The 90 mm body disc sits ABOVE the little wheels, not centred on the
+         axle. Its centre is half its height above base_link. -->
+    <origin xyz="0 0 ${body_height/2}" rpy="0 0 0"/>
+  </joint>
+  <link name="body">
+    <visual>
+      <geometry><cylinder radius="${body_radius}" length="${body_height}"/></geometry>
+      <material name="black"/>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="${body_radius}" length="${body_height}"/></geometry>
+    </collision>
+    <xacro:inertial_cylinder mass="${body_mass}" radius="${body_radius}" length="${body_height}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <joint name="left_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child  link="left_wheel"/>
+    <origin xyz="0 ${wheel_offset_y} 0" rpy="${-pi/2} 0 0"/>
+    <axis   xyz="0 0 1"/>
+  </joint>
+  <link name="left_wheel">
+    <visual>
+      <geometry><cylinder radius="${wheel_radius}" length="${wheel_thickness}"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision><geometry><sphere radius="${wheel_radius}"/></geometry></collision>
+    <xacro:inertial_cylinder mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_thickness}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <joint name="right_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child  link="right_wheel"/>
+    <origin xyz="0 ${-wheel_offset_y} 0" rpy="${pi/2} 0 0"/>
+    <axis   xyz="0 0 -1"/>
+  </joint>
+  <link name="right_wheel">
+    <visual>
+      <geometry><cylinder radius="${wheel_radius}" length="${wheel_thickness}"/></geometry>
+      <material name="orange"/>
+    </visual>
+    <collision><geometry><sphere radius="${wheel_radius}"/></geometry></collision>
+    <xacro:inertial_cylinder mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_thickness}">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+  <!-- Casters are HALF the wheel radius, so their centres sit at
+       (-wheel_radius + caster_radius) and their bottoms touch the floor. -->
+  <xacro:macro name="caster" params="name x">
+    <joint name="${name}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child  link="${name}"/>
+      <origin xyz="${x} 0 ${-wheel_radius + caster_radius}"/>
+    </joint>
+    <link name="${name}">
+      <visual><geometry><sphere radius="${caster_radius}"/></geometry><material name="white"/></visual>
+      <collision><geometry><sphere radius="${caster_radius}"/></geometry></collision>
+      <xacro:inertial_sphere mass="0.03" radius="${caster_radius}">
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+      </xacro:inertial_sphere>
+    </link>
+  </xacro:macro>
+
+  <xacro:caster name="caster_front" x="${caster_offset_x}"/>
+  <xacro:caster name="caster_rear"  x="${-caster_offset_x}"/>
+
+  <!-- ======================= CLEANING BRUSHES ==========================
+       Two brushes, 100 mm diameter, centres 200 mm apart. VISUAL ONLY — but
+       they are in the URDF so you can SEE in RViz exactly what the robot does
+       and does not sweep.
+
+           left  brush covers  -0.150 .. -0.050
+           right brush covers  +0.050 .. +0.150
+           TOTAL SWEPT WIDTH   0.300 m
+           GAP IN THE MIDDLE   0.100 m   <— your suction inlet had better be here
+
+       Mounted at the FRONT of the body.
+  =================================================================== -->
+  <xacro:property name="brush_radius"     value="0.050"/>
+  <xacro:property name="brush_separation" value="0.200"/>
+  <xacro:property name="brush_offset_x"   value="0.120"/>
+
+  <xacro:macro name="brush" params="name y">
+    <joint name="${name}_joint" type="fixed">
+      <parent link="base_link"/>
+      <child  link="${name}"/>
+      <origin xyz="${brush_offset_x} ${y} ${-wheel_radius + 0.008}"/>
+    </joint>
+    <link name="${name}">
+      <visual>
+        <geometry><cylinder radius="${brush_radius}" length="0.015"/></geometry>
+        <material name="green"/>
+      </visual>
+    </link>
+  </xacro:macro>
+
+  <xacro:brush name="brush_left"  y="${ brush_separation/2}"/>
+  <xacro:brush name="brush_right" y="${-brush_separation/2}"/>
+
+</robot>

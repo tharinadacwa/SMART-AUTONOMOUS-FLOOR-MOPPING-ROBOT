@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================
+     lidar.xacro : RPLIDAR C1.   [REVISION 2]
+
+     ##### THE HEIGHT IS A DERIVED NUMBER. DO NOT GUESS IT. #####
+       You measured: LIDAR scan plane is 0.250 m above the GROUND.
+       But the URDF wants it relative to base_link — and base_link sits at the
+       WHEEL AXLE, which is wheel_radius (0.0336 m) above the ground.
+
+           lidar_z = 0.250 - 0.0336 = 0.2164 m
+
+       This is exactly the kind of off-by-one-frame error that "mostly works" on
+       a perfectly flat floor and then breaks the instant the robot tilts, hits a
+       threshold, or you try to filter ground returns by height.
+
+     ##### MOUNTED ON THE CENTRE OF ROTATION (x=0, y=0) #####
+       If the LIDAR is offset from the centre of rotation, then every time the
+       robot spins in place the scan ORIGIN sweeps a circle. AMCL's scan matcher
+       has to explain that motion, and any error in your lidar_frame offset turns
+       directly into YAW error.
+
+       This robot does a 180-degree turn at the end of EVERY lane — and at
+       0.3519 rad/s each one takes 8.9 SECONDS. That is a long time to
+       be feeding AMCL a scan whose origin is moving in a way it does not expect.
+       Centring the LIDAR removes the problem entirely.
+
+     rpy="0 0 0" assumes the LIDAR's zero-degree ray points FORWARD (+x).
+     If yours is mounted backwards, use rpy="0 0 ${pi}".
+     GET THIS WRONG AND YOUR MAP IS MIRRORED, and Nav2 will confidently drive
+     into walls it believes are behind it. Verify it: docs/TESTING.md section 3.
+=========================================================================== -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- 0.250 m from the GROUND, minus the 0.0336 m axle height. GENERATED. -->
+  <xacro:property name="lidar_z" value="0.2164"/>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="lidar_frame"/>
+    <origin xyz="0 0 ${lidar_z}" rpy="0 0 3.14159"/>
+  </joint>
+
+  <link name="lidar_frame">
+    <visual>
+      <geometry><cylinder radius="0.0275" length="0.040"/></geometry>
+      <material name="cyan"/>
+    </visual>
+    <collision><geometry><cylinder radius="0.0275" length="0.040"/></geometry></collision>
+    <xacro:inertial_cylinder mass="0.1" radius="0.0275" length="0.040">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </xacro:inertial_cylinder>
+  </link>
+
+</robot>

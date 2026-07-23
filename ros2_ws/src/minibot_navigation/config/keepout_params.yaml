@@ -1,0 +1,43 @@
+# =============================================================================
+#  keepout_params.yaml -- Nav2 Costmap Filter servers for KEEPOUT ZONES.
+#
+#  WHO RUNS THESE   minibot_bringup/clean.launch.py (when use_keepout:=true)
+#  WHAT THEY DO     publish a filter mask that marks cells the robot must never
+#                   enter, and tell the costmap how to interpret it.
+#
+#  WHY THIS IS ONLY POSSIBLE BECAUSE YOU PRE-MAP:
+#    With online SLAM the map is being rewritten under you, so there is nothing
+#    stable to annotate. With a FROZEN map you can open it in GIMP and paint
+#    BLACK over anywhere the robot must never go:
+#
+#        * the top of a staircase          <-- the one that actually matters
+#        * the pet's water bowl
+#        * a nest of charging cables
+#        * a deep-pile rug the wheels bog down in
+#        * that one corner where it always gets wedged
+#
+#    Nav2 then treats those cells as lethal, the planner routes around them, and
+#    prepare_map.py excludes them from the coverage path entirely.
+#
+#  MAKING THE MASK -- see minibot_navigation/maps/README.md
+#
+#  NOT USING KEEPOUTS? Remove the `filters:` lines from BOTH costmaps in
+#  nav2_params.yaml. Leaving the filter enabled with no mask server running will
+#  hang the costmap waiting for a message that never comes.
+# =============================================================================
+
+keepout_filter_mask_server:
+  ros__parameters:
+    topic_name: "keepout_filter_mask"
+    frame_id: "map"
+    # yaml_filename supplied by the launch file
+
+costmap_filter_info_server:
+  ros__parameters:
+    type: 0                        # 0 = KEEPOUT (1 = speed limit, 2 = binary)
+    filter_info_topic: "/costmap_filter_info"
+    mask_topic: "keepout_filter_mask"
+    # filter_space_value = base + multiplier * mask_value
+    # Straight pass-through: black (100) -> lethal.
+    base: 0.0
+    multiplier: 1.0

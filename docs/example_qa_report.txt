@@ -1,0 +1,23 @@
+MAP QA REPORT   2026-07-13 05:26
+map                 : testmap/home.yaml
+resolution          : 0.050 m/cell
+robot radius        : 0.210 m  (diameter 0.420 m)
+erosion radius      : 0.240 m
+min passable gap    : 0.480 m
+lane spacing        : 0.250 m
+
+free floor area     : 48.91 m^2
+reachable drivable  : 30.32 m^2
+unreachable regions : 1
+narrowest corridor  : 0.50 m
+
+waypoints           : 5239  (527 edge + 4712 fill)
+lanes               : 30
+path length         : 312.4 m
+ESTIMATED RUN       : 26 minutes
+
+coverage (drivable) : 100.0%
+floor swept (body)  : 80.8%
+
+PROBLEMS:
+  - unreachable 2.05 m^2 at (7.60, 1.15)

@@ -1,0 +1,40 @@
+# =============================================================================
+#  minibot-robot.service -- the HARDWARE layer, on boot.
+#
+#  INSTALL
+#    sudo cp minibot-robot.service /etc/systemd/system/
+#    sudo systemctl daemon-reload
+#    sudo systemctl enable --now minibot-robot
+#    journalctl -u minibot-robot -f
+#
+#  Edit User=, WorkingDirectory= and the ROS_DISTRO/workspace paths to match.
+# =============================================================================
+[Unit]
+Description=Minibot hardware layer (ros2_control + LIDAR + IMU + EKF)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ros2_ws
+
+Environment="ROS_DOMAIN_ID=1"
+Environment="RCUTILS_LOGGING_BUFFERED_STREAM=1"
+
+# Wait for the GPIO UART (/dev/ttyAMA0, needs dtoverlay=uart0-pi5) and the
+# lidar's udev symlink. Without this, a cold boot can start ros2_control
+# before the devices exist and it dies immediately.
+ExecStartPre=/bin/bash -c 'for i in $(seq 1 30); do [ -e /dev/ttyAMA0 ] && [ -e /dev/minibot_lidar ] && exit 0; sleep 1; done; echo "devices never appeared"; exit 1'
+
+ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source /home/pi/ros2_ws/install/setup.bash && exec ros2 launch minibot_bringup robot.launch.py'
+
+Restart=on-failure
+RestartSec=5
+# Give the motors a chance to stop cleanly before SIGKILL.
+KillSignal=SIGINT
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

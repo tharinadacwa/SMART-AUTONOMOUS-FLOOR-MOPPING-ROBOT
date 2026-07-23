@@ -1,0 +1,175 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+  Property Tree Widget:
+    Expanded:
+    - /Global Options1
+    Splitter Ratio: 0.5
+  Tree Height: 700
+- Class: rviz_common/Tool Properties
+  Name: Tool Properties
+  Expanded:
+  - /2D Goal Pose1
+  - /Publish Point1
+  Splitter Ratio: 0.58
+- Class: nav2_rviz_plugins/Navigation 2
+  Name: Navigation 2
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Cell Size: 1
+    Plane Cell Count: 20
+    Color: 160; 160; 164
+    Alpha: 0.3
+  - Class: rviz_default_plugins/RobotModel
+    Name: RobotModel
+    Enabled: true
+    Description_Topic:
+      Value: /robot_description
+      Depth: 5
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Alpha: 1
+  - Class: rviz_default_plugins/TF
+    Name: TF
+    Enabled: false
+    Show Names: true
+    Show Axes: true
+    Marker Scale: 0.3
+  - Class: rviz_default_plugins/Map
+    Name: Map (frozen)
+    Enabled: true
+    Topic:
+      Value: /map
+      Depth: 1
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Alpha: 0.7
+    Color Scheme: map
+  - Class: rviz_default_plugins/Map
+    Name: Coverage (cleaned=light)
+    Enabled: true
+    Topic:
+      Value: /coverage_map
+      Depth: 1
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Alpha: 0.5
+    Color Scheme: costmap
+  - Class: rviz_default_plugins/Path
+    Name: Coverage Path
+    Enabled: true
+    Topic:
+      Value: /coverage_path
+      Depth: 1
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Color: 255; 85; 0
+    Line Style: Lines
+    Alpha: 1
+  - Class: rviz_default_plugins/Path
+    Name: Nav2 Plan
+    Enabled: true
+    Topic:
+      Value: /plan
+      Depth: 1
+      Durability Policy: Volatile
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Color: 0; 255; 0
+    Line Style: Lines
+  - Class: rviz_default_plugins/LaserScan
+    Name: LaserScan
+    Enabled: true
+    Topic:
+      Value: /scan
+      Depth: 5
+      Durability Policy: Volatile
+      Reliability Policy: Best Effort
+      History Policy: Keep Last
+    Size_m: 0.03
+    Color: 255; 0; 0
+    Style: Points
+    Color Transformer: FlatColor
+  - Class: rviz_default_plugins/PoseArray
+    Name: AMCL particlecloud
+    Enabled: true
+    Topic:
+      Value: /particlecloud
+      Depth: 1
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Color: 0; 180; 255
+    Shape: Arrow (Flat)
+    Arrow Length: 0.15
+    Alpha: 0.6
+  - Class: rviz_default_plugins/Map
+    Name: Global Costmap
+    Enabled: false
+    Topic:
+      Value: /global_costmap/costmap
+      Depth: 1
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Alpha: 0.4
+    Color Scheme: costmap
+  - Class: rviz_default_plugins/Map
+    Name: Local Costmap
+    Enabled: false
+    Topic:
+      Value: /local_costmap/costmap
+      Depth: 1
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+    Alpha: 0.5
+    Color Scheme: costmap
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: map
+    Frame Rate: 20
+  Tools:
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/SetInitialPose
+    Topic:
+      Value: /initialpose
+      Depth: 5
+      Durability Policy: Volatile
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+  - Class: rviz_default_plugins/SetGoal
+    Topic:
+      Value: /goal_pose
+      Depth: 5
+      Durability Policy: Volatile
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+  - Class: rviz_default_plugins/Measure
+    Line color: 128; 128; 0
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Name: TopDownOrtho
+      Scale: 60
+      Target Frame: base_link
+      X: 0
+      Y: 0
+      Angle: 0
+      Invert Z Axis: false
+      Near Clip Distance: 0.01
+    Saved: null
+Window Geometry:
+  Height: 900
+  Width: 1400
+  Displays:
+    collapsed: false

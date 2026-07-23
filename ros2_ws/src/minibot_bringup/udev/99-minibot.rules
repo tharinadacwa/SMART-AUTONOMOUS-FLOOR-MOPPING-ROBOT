@@ -1,0 +1,28 @@
+# =============================================================================
+#  /etc/udev/rules.d/99-minibot.rules
+#
+#  STM32 link: wired directly to the Pi 5 GPIO UART (USART1 PA9/PA10 <->
+#  GPIO14/15), NOT USB. No udev rule needed for it -- it's always /dev/ttyAMA0
+#  once dtoverlay=uart0-pi5 is set in /boot/firmware/config.txt. See
+#  docs/HARDWARE.md "GPIO UART wiring".
+#
+#  The LIDAR is still USB and still needs a stable name, since ttyUSB0 is
+#  assigned in enumeration order and will drift across reboots/replugs.
+#
+#  INSTALL
+#    sudo cp 99-minibot.rules /etc/udev/rules.d/
+#    sudo udevadm control --reload-rules && sudo udevadm trigger
+#    ls -l /dev/minibot_lidar   /dev/ttyAMA0
+#
+#  FIND YOUR ADAPTER'S IDs (if the lidar uses a different USB-serial chip)
+#    udevadm info -a -n /dev/ttyUSB0 | grep -E 'idVendor|idProduct|serial'
+# =============================================================================
+
+# RPLIDAR C1 -- Silicon Labs CP2102 (standard on Slamtec boards)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", SYMLINK+="minibot_lidar", MODE="0666", GROUP="dialout"
+
+# ---------------------------------------------------------------------------
+# If you ever go back to a USB-TTL adapter for the STM32 instead of GPIO,
+# uncomment and adjust (CH340 shown; see HARDWARE.md for other chip IDs):
+# SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", SYMLINK+="minibot_stm32", MODE="0666", GROUP="dialout"
+# ---------------------------------------------------------------------------
