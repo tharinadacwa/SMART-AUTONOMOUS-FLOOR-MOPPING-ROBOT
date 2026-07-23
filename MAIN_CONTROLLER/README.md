@@ -1,4 +1,4 @@
-# minibot_fw  Main Controller Firmware (STM32F407VET6)
+# minibot_fw: Main Controller Firmware (STM32F407VET6)
 
 Firmware for the main controller of the **Smart Autonomous Floor Mopping Robot**.
 It runs on an STM32F407VET6 and owns four independent subsystems:
@@ -27,8 +27,8 @@ The mop motors and pump are open-loop and run autonomously from power-on.
 | Water pump | **Cycling.** 5 s off, 3 s on, forever, from `Sig_Task()`. |
 
 If you want a silent bench board, comment out `DCM_Run()` in `main()` and/or
-`Sig_Init()`/`Sig_Task()`. Do this before the first power-up on a workbench —
-four brushed motors starting unannounced is a good way to lose a finger or a probe.
+`Sig_Init()`/`Sig_Task()`. Do this before the first power-up on a workbench; four
+brushed motors starting unannounced is a good way to lose a finger or a probe.
 
 **Common ground is mandatory.** STM32 GND, both L298N GND terminals, the MOSFET
 source, and the 12 V battery negative must all be one node. Missing common ground
@@ -52,8 +52,8 @@ is the single most frequent cause of "the motors behave randomly".
 
 | Pin | Function | Direction | Notes |
 |---|---|---|---|
-| **PE3** | `nENABLE` — both DRV8825 | out | **Active LOW.** HIGH = motors dead. Driven HIGH first thing at boot. |
-| **PE4** | LEFT STEP | out | `GPIO_SPEED_FREQ_VERY_HIGH` — needed for clean 2 µs edges |
+| **PE3** | `nENABLE`, both DRV8825 | out | **Active LOW.** HIGH = motors dead. Driven HIGH first thing at boot. |
+| **PE4** | LEFT STEP | out | `GPIO_SPEED_FREQ_VERY_HIGH`, needed for clean 2 µs edges |
 | **PE5** | LEFT DIR | out | |
 | **PE6** | RIGHT STEP | out | |
 | **PE7** | RIGHT DIR | out | |
@@ -67,20 +67,20 @@ is the single most frequent cause of "the motors behave randomly".
 | **PA3** | L298N #2 IN2 | out | Mop motor 3 |
 | **PE14** | L298N #2 IN3 | out | Mop motor 4 |
 | **PE15** | L298N #2 IN4 | out | Mop motor 4 |
-| **PA12** | Pump gate (via 220 Ω) | out | USB_DM on this package — USB is unused in this project |
+| **PA12** | Pump gate (via 220 Ω) | out | USB_DM on this package, but USB is unused in this project |
 
 TX/RX **cross over**: Pi TX → PA10, Pi RX → PA9, plus common GND.
 
 Detailed wiring instructions, including diagrams, live in:
 
-- [`WIRING_L298N.md`](WIRING_L298N.md) — DC motor drivers, ENA/ENB tie-up, power distribution
-- [`WIRING_PA12_PUMP.md`](WIRING_PA12_PUMP.md) — MOSFET switch, flyback diode placement, gate pull-down
+- [`WIRING_L298N.md`](WIRING_L298N.md): DC motor drivers, ENA/ENB tie-up, power distribution
+- [`WIRING_PA12_PUMP.md`](WIRING_PA12_PUMP.md): MOSFET switch, flyback diode placement, gate pull-down
 
 ### ⚠️ Check your crystal before first flash
 
 The firmware assumes an **8 MHz HSE crystal**. Many F407VET6 "black boards" ship
 with **25 MHz**. If yours does and you don't change it, the baud rate *and* the
-step rate are both wrong by the same 25/8 ratio — you get garbage on the serial
+step rate are both wrong by the same 25/8 ratio: you get garbage on the serial
 port and wrong motor speeds simultaneously, which is a confusing pair of symptoms
 to debug.
 
@@ -107,7 +107,7 @@ APB2 /2 → PCLK2  84 MHz → USART1
 
 TIM7: `PSC = 84-1` (84 MHz → 1 MHz), `ARR = 25-1` (1 MHz → **40 kHz**).
 Change the clock config and you *must* change these two numbers, or every step
-rate — and therefore all odometry — is silently wrong by the same ratio.
+rate (and therefore all odometry) is silently wrong by the same ratio.
 
 ---
 
@@ -120,7 +120,7 @@ TIM7 ISR @ 40 kHz ─┬─ Layer 1: DDS pulse engine
                    │    32-bit phase accumulator per motor.
                    │    inc = rate_hz × (2³² / 40000); acc += inc each tick;
                    │    a wrap past 2³² emits one STEP pulse AND bumps the
-                   │    step counter in the same breath — which is why the
+                   │    step counter in the same breath, which is why the
                    │    reported odometry is a tally, not an estimate.
                    │
                    └─ every 40th tick (1 kHz): Layer 2 + Layer 3
@@ -139,15 +139,15 @@ DRV8825's 1.9 µs minimum. If the accumulator increment is < 0.5 (i.e. step rate
 < ISR_HZ/2 = 20 kHz), then immediately after a wrap the accumulator holds a value
 below 0.5, so the *next* tick cannot wrap. Two pulses can never land on
 consecutive ticks. At the configured ceiling of 1066 sps you are using **5.3 % of
-that limit** — enormous margin.
+that limit**, an enormous margin.
 
 **Why jerk limiting matters here.** A plain trapezoidal ramp steps acceleration
-discontinuously from 0 to a_max, which is a torque step — exactly the impulse
+discontinuously from 0 to a_max, which is a torque step, exactly the impulse
 that makes a stepper skip. A coverage robot reverses at the end of every lane,
 dozens of times per room, and there are no encoders to catch a skipped step. The
 S-curve is what keeps the odometry honest across a full run.
 
-### Interrupt priorities — do not reorder
+### Interrupt priorities: do not reorder
 
 | Interrupt | Preempt priority |
 |---|---|
@@ -156,7 +156,7 @@ S-curve is what keeps the odometry honest across a full run.
 | SysTick | 15 (lowest) |
 
 The TIM7 ISR is ~2 µs. At 115200 baud a UART byte arrives every 87 µs, so even
-worst case the UART is serviced ~2 µs late — 40× inside its deadline. Giving the
+worst case the UART is serviced ~2 µs late, 40× inside its deadline. Giving the
 UART top priority "so we never miss a byte" trades a problem you don't have for
 one you can't detect: a late step pulse is jitter at best and a lost step at
 worst, and on an encoderless robot a lost step is a silent lie in the odometry.
@@ -314,7 +314,7 @@ The pump starts in the OFF phase at boot, which is the safe default.
 
 ## Build and flash
 
-### Option A — Makefile (no IDE required)
+### Option A: Makefile (no IDE required)
 
 ```bash
 sudo apt install gcc-arm-none-eabi stlink-tools
@@ -328,9 +328,9 @@ make clean
 
 The Makefile compiles a fixed source list and builds at `-O2`.
 
-### Option B — STM32CubeIDE
+### Option B: STM32CubeIDE
 
-1. **File → Switch Workspace → Other…** — pick a folder that is **not** this
+1. **File → Switch Workspace → Other…** Pick a folder that is **not** this
    project directory. Opening the project folder as the workspace is what causes
    the *"already exist in the workspace"* import error.
 2. **File → Import → General → Existing Projects into Workspace**
@@ -346,7 +346,7 @@ If CubeIDE keeps fighting you, use **File → Import → C/C++ → Existing Code
 Makefile Project**, toolchain *Cross ARM GCC*. You get the editor and debugger;
 `make` does the building.
 
-### Option C — CubeMX regeneration
+### Option C: CubeMX regeneration
 
 `minibot_fw.ioc` matches the peripheral setup in `main.c`. Regenerating
 **overwrites** `main.c`, `gpio.c`, `tim.c`, `usart.c`. Everything project-specific
@@ -435,7 +435,7 @@ Work through this in order the first time. Robot on blocks, wheels off the groun
 
 | Mechanism | Behaviour |
 |---|---|
-| **Boot order** | `MX_GPIO_Init()` runs before any other peripheral and drives nENABLE HIGH — steppers dead before anything can twitch. `DCM_Init()` pre-loads all L298N IN pins LOW *before* switching them to outputs, so no mop motor twitches during bring-up. |
+| **Boot order** | `MX_GPIO_Init()` runs before any other peripheral and drives nENABLE HIGH, so the steppers are dead before anything can twitch. `DCM_Init()` pre-loads all L298N IN pins LOW *before* switching them to outputs, so no mop motor twitches during bring-up. |
 | **Comms watchdog** | No command for 500 ms → ramp to stop, but **stay energised**, keeping holding torque so the robot doesn't roll on a slope. |
 | **Idle disable** | No command for 10 s → drop the coils. A stationary stepper at full current is a ~10 W heater doing no work. |
 | **Emergency stop** | Bypasses the profile entirely. Losing steps is an acceptable trade for stopping now. |
@@ -452,10 +452,10 @@ Work through this in order the first time. Robot on blocks, wheels off the groun
 |---|---|
 | Garbage on serial **and** wrong motor speeds | 25 MHz crystal, unpatched. Both scale by 25/8. |
 | Motors hum but don't turn | Driver current limit too low, or STEP edges too slow down long jumper wires |
-| Motor "sometimes just doesn't move" | STEP line slew rate — keep `GPIO_SPEED_FREQ_VERY_HIGH`, shorten the wire |
+| Motor "sometimes just doesn't move" | STEP line slew rate; keep `GPIO_SPEED_FREQ_VERY_HIGH`, shorten the wire |
 | Robot spins instead of driving forward | Flip exactly one `*_DIR_INVERT` |
 | Distances consistently 2× off | DRV8825 microstep jumpers don't match `MB_STEPS_PER_REV` |
-| Flag bit 4 (`CMD_TIMEOUT`) always set | Host isn't sending, or CRC mismatch — check flag bit 8 |
+| Flag bit 4 (`CMD_TIMEOUT`) always set | Host isn't sending, or CRC mismatch; check flag bit 8 |
 | Flag bit 8 (`CRC_ERR`) sticky | Wiring noise, wrong baud, or a host-side CRC implementation bug |
 | Flag bit 16 (`OVERRUN`) sticky | Host is flooding the link, or an ISR is running long |
 | Mop motors do nothing | ENA/ENB jumpers missing → enable node not at +5 V |
@@ -471,7 +471,7 @@ Documented honestly so the next person doesn't lose an evening:
 
 - **`minibot_config.h` claims to be auto-generated** from `robot.yaml` by
   `tools/generate_config.py`. Neither file is in this tree. Until they are
-  restored, the header **is** the source of truth and must be hand-edited — the
+  restored, the header **is** the source of truth and must be hand-edited, and the
   "do not hand-edit" banner is currently misleading.
 - **`stm32_bench.py` is referenced but absent.** Step-verification has to be done
   manually (see the bring-up checklist) or with your own host script.
