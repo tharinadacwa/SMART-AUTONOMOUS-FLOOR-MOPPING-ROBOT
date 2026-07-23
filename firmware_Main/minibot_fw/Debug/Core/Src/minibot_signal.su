@@ -1,0 +1,2 @@
+../Core/Src/minibot_signal.c:19:6:Sig_Init	32	static
+../Core/Src/minibot_signal.c:37:6:Sig_Task	16	static

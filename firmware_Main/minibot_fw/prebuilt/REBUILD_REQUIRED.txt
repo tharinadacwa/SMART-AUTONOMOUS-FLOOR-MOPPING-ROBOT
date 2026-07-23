@@ -1,0 +1,15 @@
+The old prebuilt binaries (minibot.hex/.bin/.elf) were REMOVED on purpose.
+
+They were built BEFORE the L298N DC-motor code was added, so flashing them
+would run the robot with the 4 DC motors dead. Rebuild from source to get a
+binary that includes the DC-motor module:
+
+  Option A - STM32CubeIDE:
+      File > Open Projects from File System... > select this folder,
+      then Project > Build (Ctrl+B). New file Core/Src/minibot_dcmotor.c is
+      auto-discovered. Flash the resulting Debug/minibot_fw.elf.
+
+  Option B - Makefile + arm-none-eabi-gcc:
+      make            # produces build/minibot.hex / .bin / .elf
+
+Nothing else in the build setup changed.
