@@ -439,18 +439,8 @@ flowchart TD
 | 🧠 AI | Object detection to classify and avoid hazards |
 | ☁️ Telemetry | Cloud monitoring of coverage reports |
 
----
 
-## 📊 Results
 
-| Metric | Value |
-|---|---|
-| 🧹 Coverage achieved | `TBD %` |
-| 🎯 Navigation accuracy | `TBD m` |
-| 📏 Planned path length | `TBD m` |
-| ⏱️ Runtime | `TBD min` |
-| 🧭 Heading drift per rotation | `TBD °` |
-| 🗺️ Mapped area | `TBD m²` |
 
 
 
