@@ -16,7 +16,7 @@
 <br>
 
 <!-- 📸 Replace with the robot / system overview image -->
-<img src="media/project_overview.jpg" alt="Smart Autonomous Floor Mopping Robot" width="720">
+
 
 </div>
 
@@ -70,7 +70,15 @@
 <div align="center">
 
 <!-- 📸 Replace with the SLAM / system architecture image -->
-<img src="media/system_architecture.png" alt="System architecture" width="760">
+<img src="media/project_overview.png" alt="System architecture" width="760">
+
+</div>
+<div align="center">
+
+<!-- 🎞️ Robot following the coverage path -->
+<img src="media/lidar.gif" alt="RPLidar C1 " width="640">
+
+<sub>Visualization of boundaries and obstacles with RPLidar C1</sub>
 
 </div>
 
@@ -145,14 +153,7 @@
 - Hairline gaps in walls are sealed morphologically so lanes cannot leak into another room.
 - A Hough transform finds the dominant wall angle and the map is rotated so lanes run **parallel to the walls**.
 
-<div align="center">
 
-<!-- 🎞️ Replace with the BCD algorithm animation -->
-<img src="media/bcd_algorithm.gif" alt="Boustrophedon Cellular Decomposition animation" width="640">
-
-<sub>BCD sweep line, critical points, cell formation and serpentine generation</sub>
-
-</div>
 
 ---
 
@@ -224,7 +225,13 @@ flowchart TD
 <br><br>
 
 <!-- 📸 Coverage path preview -->
-<img src="media/coverage_path.png" alt="Boustrophedon coverage path" width="560">
+<img src="media/coverage_path1.png" alt="Boustrophedon coverage path planning" width="560">
+<br><sub>BCD coverage path generated over the saved map</sub>
+
+<br><br>
+
+<!-- 📸 Coverage path preview -->
+<img src="media/coverage_path2.png" alt="Boustrophedon coverage path" width="560">
 <br><sub>BCD coverage path generated over the saved map</sub>
 
 <br><br>
@@ -445,15 +452,7 @@ flowchart TD
 | 🧭 Heading drift per rotation | `TBD °` |
 | 🗺️ Mapped area | `TBD m²` |
 
-<div align="center">
 
-<!-- 🎞️ Results demonstration -->
-<img src="media/results_demo.gif" alt="Coverage run result" width="640">
-
-<!-- 📸 Hardware photographs -->
-<img src="media/hardware_photo.jpg" alt="Robot hardware" width="640">
-
-</div>
 
 ---
 
