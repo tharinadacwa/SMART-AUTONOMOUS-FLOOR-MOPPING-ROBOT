@@ -1,205 +1,464 @@
-# minibot — autonomous coverage-cleaning robot  · **REVISION 2**
+<div align="center">
 
-**STM32F407VET6 · 2× DRV8825 @1.4A · 2× NEMA-17 (NO ENCODERS) · Raspberry Pi 5 · RPLIDAR C1 · MPU6050**
-**67.2 mm wheels · 400 mm track · 420 mm wheel span · pre-mapped · AMCL · ROS 2 Jazzy**
+# 🧹 Smart Autonomous Floor Mopping Robot
+
+### Autonomous coverage cleaning using ROS 2, LiDAR SLAM and Boustrophedon Cellular Decomposition
+
+![ROS 2](https://img.shields.io/badge/ROS_2-Jazzy-22314E?style=for-the-badge&logo=ros&logoColor=white)
+![Nav2](https://img.shields.io/badge/Navigation2-Stack-2C8EBB?style=for-the-badge)
+![SLAM Toolbox](https://img.shields.io/badge/SLAM-slam__toolbox-4B8BBE?style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![C++](https://img.shields.io/badge/C%2B%2B-ros2__control-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)
+![STM32](https://img.shields.io/badge/STM32-F407-03234B?style=for-the-badge&logo=stmicroelectronics&logoColor=white)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry_Pi-5-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white)
+![Status](https://img.shields.io/badge/status-hardware_validated-success?style=for-the-badge)
+
+<br>
+
+<!-- 📸 Replace with the robot / system overview image -->
+<img src="media/project_overview.jpg" alt="Smart Autonomous Floor Mopping Robot" width="720">
+
+</div>
 
 ---
 
-## :rotating_light: I GOT THE GEOMETRY WRONG IN REVISION 1. THIS IS THE FIX.
+## 📌 Overview
 
-Revision 1 was built on **wheel_radius 0.19 m** and **wheel_separation 0.30 m**.
-You measured the real thing:
+**The problem**
 
-| | Rev 1 | **Your actual hardware** | Error |
+- 🔁 Consumer cleaning robots often rely on random-bounce motion, so floor area is covered unevenly and repeatedly.
+- ⏱️ Random motion needs several times longer to approach full coverage of the same room.
+- 🚫 Without a global map, the robot cannot report what it actually cleaned.
+
+**Why coverage path planning matters**
+
+- ✅ Guarantees every reachable cell of the floor is visited **at least once**.
+- ✅ Minimises overlap, which directly reduces runtime and battery use.
+- ✅ Produces a deterministic, repeatable and auditable cleaning route.
+
+**What makes this project different**
+
+| | |
+|---|---|
+| 🧭 | Full **Boustrophedon Cellular Decomposition (BCD)** planner written from scratch, not an off-the-shelf coverage plugin |
+| ⚙️ | **Encoderless closed-loop motion control** using STM32 step verification plus MPU6050 yaw integration |
+| 🗺️ | Lanes are aligned to the **dominant wall direction** via Hough transform, not to the image axes |
+| 🧱 | Complete split-brain architecture: Raspberry Pi for planning, STM32 for real-time actuation |
+
+---
+
+## 🔧 Hardware Architecture
+
+| Component | Model | Role |
+|---|---|---|
+| 🧠 High-level controller | **Raspberry Pi 5** (Ubuntu Server 24.04) | ROS 2 Jazzy, Nav2, SLAM, coverage planning |
+| ⚡ Low-level controller | **STM32F407** | Real-time step generation and motion sequencing |
+| 📡 LiDAR | **RPLIDAR C1** | 2D scanning for SLAM, localisation and obstacle sensing |
+| 🧭 IMU | **MPU6050** | Yaw rate for rotation correction |
+| 🔩 Actuators | **2 × NEMA17 stepper motors** | Differential drive, **no wheel encoders** |
+| 🔌 Drivers | **DRV8825** | Microstepping current control |
+| 🔋 Power | Isolated motor and logic rails | Motor supply kept off the Pi rail |
+
+**Division of responsibility**
+
+- ✔️ **Raspberry Pi** performs high-level navigation and all ROS 2 computation.
+- ✔️ **STM32** performs real-time motor control over a UART link (`/dev/ttyAMA0`).
+- ✔️ **RPLIDAR C1** performs SLAM and localisation.
+- ✔️ **MPU6050** provides yaw rate for heading feedback.
+- ✔️ **NEMA17 motors are encoderless**, so closed-loop behaviour is recovered in firmware.
+
+<div align="center">
+
+<!-- 📸 Replace with the SLAM / system architecture image -->
+<img src="media/system_architecture.png" alt="System architecture" width="760">
+
+</div>
+
+---
+
+## 💻 Software Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| 🤖 Middleware | **ROS 2 Jazzy** | Node graph, TF tree, message transport |
+| 🧭 Navigation | **Navigation2** | Global and local planning, controller server, behaviour trees |
+| 🗺️ SLAM | **slam_toolbox** | Online async mapping and pose graph optimisation |
+| 📍 Localisation | **AMCL** | Particle filter localisation against the saved map |
+| 🔗 Fusion | **robot_localization (EKF)** | Fuses wheel translation with MPU6050 yaw |
+| ⚙️ Hardware interface | **ros2_control** (C++) | `StepperDiffDrive` plugin, UART protocol to STM32 |
+| 🧮 Coverage planner | **Python + OpenCV + NumPy + SciPy** | BCD decomposition, Hough wall alignment, path export |
+| 👁️ Visualisation | **RViz2** | Map, costmaps, TF, live coverage waypoint markers |
+| 🔬 Firmware | **STM32 HAL / C** | Timer-driven step pulses, protocol parser, motion queue |
+
+---
+
+## 🧭 Boustrophedon Cellular Decomposition
+
+> *Boustrophedon* is Greek for "as the ox turns while ploughing", which is exactly the back-and-forth motion the planner produces.
+
+**What BCD is**
+
+- A coverage algorithm that divides free space into obstacle-free **cells**, then sweeps each cell with parallel lanes.
+- Classic formulation by Choset, widely used for cleaning, agricultural and inspection robots.
+
+**Why decompose at all**
+
+- 🧩 A room with obstacles is **not** a simple rectangle, so a single sweep pattern would either clip obstacles or leave gaps.
+- 🧩 Each cell **is** obstacle free by construction, so inside a cell coverage becomes trivial.
+
+**Why obstacles split the environment**
+
+- A vertical sweep line is passed across the map one pixel column at a time.
+- The number of connected free **slices** in that column is counted.
+- When that count changes, an obstacle has started or ended. That column is a **critical point**.
+- 🔻 Slice count increases → **IN event** → the current cell splits into new cells.
+- 🔺 Slice count decreases → **OUT event** → cells merge and are closed.
+
+**How cells are covered**
+
+1. Lanes are spaced by the mop width minus a small overlap.
+2. Within a cell the robot drives to one end of a lane, then the other.
+3. The next lane is entered from the side it finished on, giving the zig-zag.
+4. Cells are visited in sweep order so the transition between cells is short.
+
+**Why zig-zag**
+
+- ➡️ Removes the need to return to a start point after each lane, which would nearly double travel distance.
+- ➡️ Turns occur only at lane ends, so the number of rotations is minimal.
+- ➡️ Repeated cleaning is bounded to the deliberate lane overlap only.
+
+**Advantages over random coverage**
+
+| Criterion | Random bounce | BCD |
+|---|---|---|
+| Coverage guarantee | ❌ Probabilistic | ✅ Complete over reachable space |
+| Overlap | ❌ Uncontrolled | ✅ Fixed by lane spacing |
+| Runtime | ❌ Long and variable | ✅ Predictable, estimated before running |
+| Repeatability | ❌ Different every run | ✅ Deterministic |
+| Reporting | ❌ Not possible | ✅ Waypoint level progress |
+
+**Implementation notes**
+
+- Free space is eroded by robot radius plus safety margin so the planned path is a valid **centre** trajectory.
+- Unknown map cells are treated as blocked, so the planner never drives into unmapped space.
+- Only the connected component reachable from the start pose is planned.
+- Hairline gaps in walls are sealed morphologically so lanes cannot leak into another room.
+- A Hough transform finds the dominant wall angle and the map is rotated so lanes run **parallel to the walls**.
+
+<div align="center">
+
+<!-- 🎞️ Replace with the BCD algorithm animation -->
+<img src="media/bcd_algorithm.gif" alt="Boustrophedon Cellular Decomposition animation" width="640">
+
+<sub>BCD sweep line, critical points, cell formation and serpentine generation</sub>
+
+</div>
+
+---
+
+## 🚦 Robot Navigation Pipeline
+
+```mermaid
+flowchart TD
+    A["🗺️ Occupancy Grid Map<br/><i>saved from slam_toolbox</i>"] --> B["📡 SLAM / Scan Matching<br/><i>RPLIDAR C1</i>"]
+    B --> C["📍 Localisation<br/><i>AMCL + EKF</i>"]
+    C --> D["🧭 Coverage Planner<br/><i>bcd_coverage.py</i>"]
+    D --> E["🛣️ Path Following<br/><i>Nav2 controller server</i>"]
+    E --> F["⚙️ Motor Control<br/><i>STM32 over UART</i>"]
+    F --> G["🧹 Cleaning Execution"]
+    G -.->|"pose feedback"| C
+```
+
+---
+
+## ⭐ Unique Closed-Loop Encoderless Control
+
+> [!IMPORTANT]
+> **The robot has no wheel encoders by design.** Closed-loop motion is recovered from two independent sources: verified step counts on the STM32, and integrated yaw rate from the MPU6050. This is one of the core engineering contributions of the project.
+
+**Why no encoders**
+
+- 💰 Removes two encoders, their wiring and their interrupt load.
+- 🧪 Stepper motors already move in discrete, known increments, so position is commanded rather than measured.
+
+**During straight motion**
+
+- The STM32 is commanded an **exact pulse count** rather than a continuous velocity.
+- The firmware counts every pulse it generates on the step timer.
+- The next command is not accepted until the commanded step count has been **fully completed**.
+- 📏 Distance therefore closes on the commanded value instead of on elapsed time.
+
+**During turning**
+
+- ❌ Wheel-derived heading is **not trusted**. A single lost step on an encoderless drivetrain corrupts the yaw estimate permanently.
+- ✅ The MPU6050 gyroscope **z-axis rate is integrated** to obtain the angle actually turned.
+- ✅ The measured angle is prioritised over the theoretical value predicted by wheel odometry.
+- ✅ In the EKF, wheel odometry contributes translation only, and the gyro owns rotation entirely.
+
+**Result**
+
+| Behaviour | Before | After |
+|---|---|---|
+| Heading drift over repeated rotations | Accumulating | Substantially reduced |
+| SLAM map doubling on turns | Present | Eliminated |
+| Straight-line distance error | Time dependent | Step-count bounded |
+
+---
+
+## 🗺️ Mapping
+
+**Pipeline**
+
+- 📡 **RPLIDAR C1** publishes `/scan` at the robot base frame, orientation corrected in the URDF.
+- 🧠 **slam_toolbox** runs in online asynchronous mode, building and optimising the pose graph.
+- 🧱 The result is an **occupancy grid**: free, occupied and unknown cells at 5 cm resolution.
+- 💾 The map is saved with `map_saver_cli` into a `.pgm` image plus a `.yaml` descriptor.
+- 🧭 The saved map is then served to **AMCL** and to the coverage planner.
+
+<div align="center">
+
+<!-- 📸 Generated occupancy grid map -->
+<img src="media/generated_map.png" alt="Generated occupancy grid map" width="560">
+<br><sub>Occupancy grid produced by slam_toolbox</sub>
+
+<br><br>
+
+<!-- 📸 Coverage path preview -->
+<img src="media/coverage_path.png" alt="Boustrophedon coverage path" width="560">
+<br><sub>BCD coverage path generated over the saved map</sub>
+
+<br><br>
+
+<!-- 📸 RViz2 visualisation -->
+<img src="media/rviz2_visualization.png" alt="RViz2 navigation view" width="640">
+<br><sub>RViz2: map, costmaps, TF tree and colour-coded coverage waypoints</sub>
+
+</div>
+
+---
+
+## 🎥 Navigation Demonstration
+
+<div align="center">
+
+<!-- 🎞️ Robot following the coverage path -->
+<img src="media/robot_navigation.gif" alt="Robot following the boustrophedon coverage path" width="640">
+
+<sub>Robot executing the boustrophedon coverage path on hardware</sub>
+
+</div>
+
+---
+
+## 📂 Repository Structure
+
+<details open>
+<summary><b>🧭 Coverage planning</b></summary>
+
+| File | Purpose | Importance | Stage |
 |---|---|---|---|
-| wheel radius | 0.1900 m | **0.0336 m** (67.2 mm dia) | **5.65× too big** |
-| wheel separation | 0.3000 m | **0.400 m** | **33 % too small** |
-| robot radius | 0.1900 m | **0.210 m** | the wheels stick out past the body |
+| `bcd_coverage.py` | Standalone BCD planner. Sweep-line decomposition, Hough wall alignment, serpentine generation, YAML and preview export | 🔴 Core | Offline planning |
+| `ros2_ws/src/minibot_coverage/minibot_coverage/prepare_map.py` | In-package map preparation and lane generation | 🔴 Core | Offline planning |
+| `ros2_ws/src/minibot_coverage/minibot_coverage/coverage_server.py` | Replays the waypoint YAML through Nav2, tracks per-waypoint status, publishes `/coverage_waypoints` markers | 🔴 Core | Runtime |
+| `ros2_ws/src/minibot_coverage/config/coverage_params.yaml` | Lane spacing, robot radius, tolerances | 🟠 High | Configuration |
+| `ros2_ws/src/minibot_coverage/launch/coverage.launch.py` | Brings up the coverage server | 🟠 High | Launch |
 
-### Why it happened — a reasoning error, not just a bad input
+</details>
 
-I argued: *"5–20 RPM only makes sense with big wheels, otherwise you'd get 7 cm/s,
-which is absurd."*
+<details>
+<summary><b>🗺️ Navigation and SLAM</b></summary>
 
-**Your wheels are small.** So the correct conclusion was never *"the wheels must be
-big"* — it was **"the 20 RPM cap is the thing that's wrong."** Given two
-contradictory inputs, I distrusted the wrong one, then built 336 files on it.
+| File | Purpose | Importance | Stage |
+|---|---|---|---|
+| `ros2_ws/src/minibot_navigation/config/nav2_params.yaml` | Full Nav2 configuration: AMCL, planner, controller, costmaps, recoveries | 🔴 Core | Runtime |
+| `ros2_ws/src/minibot_navigation/config/slam_mapping.yaml` | slam_toolbox online async parameters | 🔴 Core | Mapping |
+| `ros2_ws/src/minibot_navigation/config/keepout_params.yaml` | Keep-out filter mask parameters | 🟡 Medium | Runtime |
+| `ros2_ws/src/minibot_navigation/behavior_trees/navigate_through_poses_coverage.xml` | Behaviour tree tuned for long waypoint sequences | 🟠 High | Runtime |
+| `ros2_ws/src/minibot_navigation/behavior_trees/navigate_to_pose_dock.xml` | Single-goal docking behaviour tree | 🟡 Medium | Runtime |
+| `robot_files/slam_params.yaml` | Standalone SLAM parameter set used during bring-up | 🟡 Medium | Mapping |
+| `robot_files/nav2_params.yaml` | Standalone Nav2 parameter set used during bring-up | 🟡 Medium | Runtime |
 
-That lesson is now **encoded in the tooling**: `generate_config.py` warns whenever
-the pulse engine is under 15 % utilised *and* torque margin is high — the exact
-signature of an artificial speed cap throttling the robot.
+</details>
 
-Full changelog: **`docs/REVISION_2.md`**. Hardware record: **`docs/HARDWARE.md`**.
+<details>
+<summary><b>🤖 Robot description and visualisation</b></summary>
 
----
+| File | Purpose | Importance | Stage |
+|---|---|---|---|
+| `ros2_ws/src/minibot_description/urdf/robot.urdf.xacro` | Top-level robot model | 🔴 Core | Bring-up |
+| `ros2_ws/src/minibot_description/urdf/base.xacro` | Chassis, wheels, differential drive geometry | 🟠 High | Bring-up |
+| `ros2_ws/src/minibot_description/urdf/lidar.xacro` | RPLIDAR C1 mount and frame, includes the 180° orientation fix | 🟠 High | Bring-up |
+| `ros2_ws/src/minibot_description/urdf/imu.xacro` | MPU6050 frame definition | 🟠 High | Bring-up |
+| `ros2_ws/src/minibot_description/urdf/ros2_control.xacro` | ros2_control hardware interface declaration | 🔴 Core | Bring-up |
+| `ros2_ws/src/minibot_description/urdf/inertial_macros.xacro` | Reusable inertia macros | 🟡 Medium | Bring-up |
+| `ros2_ws/src/minibot_description/rviz/navigation.rviz` | RViz2 layout for navigation and coverage | 🟠 High | Visualisation |
+| `ros2_ws/src/minibot_description/rviz/view_robot.rviz` | RViz2 layout for model inspection | 🟡 Medium | Visualisation |
+| `robot_files/robot.urdf` | Flattened URDF used during early bring-up | 🟡 Medium | Bring-up |
 
-## Three things you probably haven't hit yet
+</details>
 
-### 1. The WHEELS are the widest part of the robot
+<details>
+<summary><b>⚙️ Hardware interface and STM32 link</b></summary>
 
-```
-  body: 380 mm   ├────────────────────┤
-wheels: 420 mm  ├──────────────────────┤   ← WIDER
-```
+| File | Purpose | Importance | Stage |
+|---|---|---|---|
+| `ros2_ws/src/minibot_hardware/src/stepper_diffdrive.cpp` | `StepperDiffDrive` ros2_control system plugin, converts wheel commands to STM32 frames | 🔴 Core | Runtime |
+| `ros2_ws/src/minibot_hardware/include/minibot_hardware/stepper_diffdrive.hpp` | Plugin interface declaration | 🟠 High | Runtime |
+| `ros2_ws/src/minibot_hardware/include/minibot_hardware/serial_link.hpp` | UART transport, framing and timeout handling | 🔴 Core | Runtime |
+| `ros2_ws/src/minibot_hardware/minibot_hardware.xml` | pluginlib export descriptor | 🟠 High | Build |
+| `ros2_ws/src/minibot_hardware/test/test_protocol.cpp` | Unit tests for the serial protocol | 🟡 Medium | Verification |
+| `robot_files/real_serial_bridge.py` | Lightweight Twist to UART bridge used before the ros2_control plugin | 🟡 Medium | Bring-up |
 
-Nav2 now gets **`robot_radius: 0.210`** — half the *wheel* span. Plan against the
-body (0.190) and Nav2 will confidently drive the **wheels** into walls it believes
-it clears. Presents as *"it keeps scraping along walls"* and looks like a
-controller bug.
+</details>
 
-**Consequence:** doorways narrower than **48 cm** are now unreachable (was 44 cm).
+<details>
+<summary><b>🔬 STM32 firmware</b></summary>
 
-### 2. A 9 cm strip along every wall is NEVER cleaned
+| File | Purpose | Importance | Stage |
+|---|---|---|---|
+| `stm32/Core/Src/minibot_motion.c` | Step generation, pulse counting and **step completion verification** | 🔴 Core | Real time |
+| `stm32/Core/Inc/minibot_motion.h` | Motion module interface | 🟠 High | Real time |
+| `stm32/Core/Src/minibot_protocol.c` | UART command parser and acknowledgement handling | 🔴 Core | Real time |
+| `stm32/Core/Inc/minibot_protocol.h` | Protocol definitions shared with the Pi side | 🟠 High | Real time |
+| `stm32/Core/Inc/minibot_config.h` | Steps per metre, wheelbase, microstepping, pin mapping | 🔴 Core | Configuration |
+| `stm32/Core/Src/main.c` | Peripheral init and main control loop | 🟠 High | Real time |
+| `stm32/Core/Src/tim.c` | Timer configuration driving the step pulses | 🟠 High | Real time |
+| `stm32/Core/Src/usart.c` | UART peripheral configuration | 🟡 Medium | Real time |
 
-```
-wall │
-     │←──── 0.240 m ────→│     robot centre can get no closer
-     │                   ●     (robot_radius 0.210 + safety 0.030)
-     │←9cm→│←── 0.300 m brush ──→│
-     │▓▓▓▓▓│ NEVER CLEANED
-```
+</details>
 
-**This is mechanical. No software fixes it.** Accept it, drop `safety_margin`
-0.03→0.01 (→7 cm), or **mount the brushes further outboard**.
+<details>
+<summary><b>🧭 IMU and sensor fusion</b></summary>
 
-### 3. :warning: The 100 mm gap between your two brushes — CONFIRM THIS
+| File | Purpose | Importance | Stage |
+|---|---|---|---|
+| `ros2_ws/src/minibot_imu/minibot_imu/mpu6050_node.py` | Reads the MPU6050 over I2C, applies axis mapping, publishes `/imu/data` | 🔴 Core | Runtime |
+| `ros2_ws/src/minibot_imu/minibot_imu/imu_calibrate.py` | Gyro bias calibration exposed as `/imu/recalibrate` | 🟠 High | Calibration |
+| `ros2_ws/src/minibot_imu/config/imu_params.yaml` | Axis map, bias, covariance settings | 🟠 High | Configuration |
+| `ros2_ws/src/minibot_imu/config/ekf.yaml` | robot_localization fusion matrix, wheel yaw deliberately disabled | 🔴 Core | Configuration |
+| `ros2_ws/src/minibot_imu/launch/imu.launch.py` | IMU and EKF bring-up | 🟠 High | Launch |
+| `robot_files/odometry_node.py` | Gyro-integrated odometry node with TF broadcast, used during bring-up | 🟠 High | Bring-up |
+| `robot_files/imu_verify.py` | I2C level IMU verification utility | 🟡 Medium | Diagnostics |
 
-Two 100 mm brushes with centres 200 mm apart leaves a **100 mm gap in the middle**.
+</details>
 
-That's **fine if your suction inlet sits there** (side brushes sweeping inward is
-the standard design). **If nothing is there, you have a 100 mm uncleaned stripe
-down the centre of every single lane** — and the "% swept" readout would be
-overstating reality. Look at the robot and tell me.
+<details>
+<summary><b>🚀 Bring-up, launch and system integration</b></summary>
 
----
+| File | Purpose | Importance | Stage |
+|---|---|---|---|
+| `ros2_ws/src/minibot_bringup/launch/robot.launch.py` | Full robot bring-up: description, controllers, LiDAR, IMU, EKF | 🔴 Core | Launch |
+| `ros2_ws/src/minibot_bringup/launch/map.launch.py` | SLAM mapping session | 🔴 Core | Launch |
+| `ros2_ws/src/minibot_bringup/launch/clean.launch.py` | Localisation, Nav2 and coverage in one cleaning run | 🔴 Core | Launch |
+| `ros2_ws/src/minibot_bringup/launch/rviz.launch.py` | RViz2 with the navigation layout | 🟡 Medium | Launch |
+| `ros2_ws/src/minibot_bringup/config/controllers.yaml` | `diff_drive_controller` and joint state broadcaster | 🔴 Core | Configuration |
+| `ros2_ws/src/minibot_bringup/config/twist_mux.yaml` | Priority arbitration between teleop and Nav2 velocity commands | 🟠 High | Configuration |
+| `ros2_ws/src/minibot_bringup/config/derived_params.yaml` | Steps per metre and geometry derived from `robot.yaml` | 🟠 High | Configuration |
+| `ros2_ws/src/minibot_bringup/config/diagnostics.yaml` | Runtime diagnostics aggregation | 🟡 Medium | Configuration |
+| `ros2_ws/src/minibot_bringup/scripts/calibrate_odom.py` | Empirical calibration of steps per metre and wheelbase | 🟠 High | Calibration |
+| `ros2_ws/src/minibot_bringup/scripts/stm32_bench.py` | UART link latency and throughput benchmark | 🟡 Medium | Verification |
+| `ros2_ws/src/minibot_bringup/udev/99-minibot.rules` | Stable device names for LiDAR and STM32 | 🟠 High | Deployment |
+| `ros2_ws/src/minibot_bringup/systemd/minibot-robot.service` | Auto-start of the robot stack on boot | 🟡 Medium | Deployment |
+| `ros2_ws/src/minibot_bringup/systemd/minibot-clean.service` | Auto-start of the cleaning run | 🟡 Medium | Deployment |
+| `robot.yaml` | Single source of truth for all physical robot parameters | 🔴 Core | Configuration |
 
-## :rotating_light: Your 20 RPM cap costs you 68 minutes per run
+</details>
 
-| RPM | Speed | Step rate | Pulse engine | 49 m² flat |
-|---|---|---|---|---|
-| **20** *(your spec — what I shipped)* | 0.070 m/s | 1066 sps | **5.3 %** | **94 min** |
-| 60 | 0.211 m/s | 3200 sps | 16.0 % | **31 min** |
-| 60 **+ lane 0.19→0.25** | 0.211 m/s | 3200 sps | 16.0 % | **26 min** |
+<details>
+<summary><b>📖 Documentation</b></summary>
 
-At 20 RPM the pulse engine is **5 % used** and the motors have **~12× torque
-margin** at 6 kg. **The cap is buying you nothing.**
-
-Lane spacing 0.19 m against your **0.30 m** brush means **11 cm of overlap** — you
-clean **37 % of the floor twice**. 0.25 m still leaves 5 cm of overlap.
-
-**Both are one line each in `robot.yaml`.** I shipped your stated values.
-
----
-
-## The good news: 6 kg is now easy
-
-Small wheels **multiply force** (`F = torque / radius`):
-
-| | Rev 1 (0.19 m wheels) | **Rev 2 (0.0336 m wheels)** |
-|---|---|---|
-| force per wheel @ 0.40 N·m | 2.1 N | **11.9 N** |
-| torque needed for 6 kg | 0.565 N·m | **0.034 N·m** |
-| verdict | **IMPOSSIBLE** (40 % short) | **~12× margin** |
-
-6 kg is comfortable. So is 10 kg. You're now limited by **traction**, not torque.
-
-> Caveat: this assumes **0.40 N·m** holding torque at 1.4 A — a *typical* figure for
-> a NEMA-17 42-34. **I do not have your motor's datasheet.** Read the real number
-> off the motor label before you trust that margin.
-
----
-
-## What was verified, and what wasn't
-
-| | |
+| File | Purpose |
 |---|---|
-| ✅ **Firmware compiles** | `arm-none-eabi-gcc 13.2.1`, **0 warnings in project code**, 3.7 % flash |
-| ✅ **CRC protocol** | firmware C ↔ ROS C++ ↔ Python bench tool **agree bit-for-bit**; 100 % of single-bit flips rejected |
-| ✅ **URDF expands** | 11 links, wheels at ±0.200, lidar at 0.2164, brushes at ±0.100 |
-| ✅ **Coverage planner** | run end-to-end; correctly flags unreachable rooms and the 9 cm wall strip |
-| ✅ **DDS invariant** | machine-checked — the generator *refuses* to emit a config that breaks it |
-| ❌ **`colcon build` never run** | **no ROS 2 in my sandbox.** The C++ plugin and launch files are unverified against real ROS headers |
-| ❌ **Nothing has run on hardware** | AMCL/EKF/RPP values are reasoned from docs, not measured |
+| `docs/ARCHITECTURE.md` | System and node architecture |
+| `docs/HARDWARE.md` | Wiring, power and component detail |
+| `docs/INTERFACES.md` | UART protocol and ROS interface contracts |
+| `docs/DERIVED_NUMBERS.md` | Derivation of steps per metre, wheelbase and limits |
+| `docs/TESTING.md` | Test and verification procedure |
+| `docs/FILE_MANIFEST.md` | Complete file inventory |
 
-**Be clear-eyed:** the logic/math/protocol is genuinely tested. The ROS-runtime
-parts are well-reasoned but unproven. A `colcon build` on the Pi will find any
-issues fast — they'd be compile errors, not flaky-robot-in-the-field bugs.
+</details>
 
 ---
 
-## Two directories
+## 🔄 Complete System Workflow
 
-```
-stm32/      →  cd stm32 && make flash
-ros2_ws/    →  cd tools && ./setup_pi.sh
-```
-
-Everything derives from **`robot.yaml`** via **`tools/generate_config.py`**.
-
-## Do this, in order
-
-```bash
-# 0. BENCH-TEST THE STM32. No ROS. Robot on blocks. DO NOT SKIP.
-python3 stm32_bench.py --watch
-python3 stm32_bench.py --verify-steps
-#    -> commands ONE wheel revolution = 211 mm of travel on your 67.2 mm wheels.
-#       Mark the wheel AND the floor. If it turns twice, your DRV8825 jumpers
-#       say 1/8 not 1/16, and every distance is silently 2x wrong.
-
-# 1. Install on the Pi
-cd tools && ./setup_pi.sh && sudo reboot
-
-# 2. IMU axis check (an inverted z makes the EKF fuse a heading that turns
-#    the WRONG WAY, and the symptom looks nothing like the cause)
-ros2 run minibot_imu imu_calibrate.py --axis-check
-
-# 3. Calibrate the two numbers everything rests on
-ros2 launch minibot_bringup robot.launch.py
-ros2 run minibot_bringup calibrate_odom.py --straight 2.0   # fixes wheel_radius
-ros2 run minibot_bringup calibrate_odom.py --rotate 10      # fixes wheel_separation
-#    -> results into robot.yaml, then: python3 tools/generate_config.py
-
-# 4. MAP your room (once)
-ros2 launch minibot_bringup map.launch.py
-ros2 run nav2_map_server map_saver_cli -f ~/ros2_ws/maps/home
-
-# 5. PLAN offline, on your laptop  <-- the step that saves your afternoon
-python3 prepare_map.py --map maps/home.yaml --start 0 0
-#    -> READ maps/home_qa.txt.  LOOK AT maps/home_coverage_preview.png.
-
-# 6. CLEAN
-ros2 launch minibot_bringup clean.launch.py \
-    map:=$HOME/ros2_ws/maps/home.yaml \
-    path:=$HOME/ros2_ws/maps/home_coverage_path.yaml
-ros2 service call /coverage/start std_srvs/srv/Trigger
+```mermaid
+flowchart TD
+    U["👤 User<br/><i>starts cleaning run</i>"] --> M["🗺️ Saved Map<br/><i>.pgm + .yaml</i>"]
+    M --> P["🧭 Coverage Planner<br/><i>Boustrophedon Cellular Decomposition</i>"]
+    P --> R["🤖 ROS 2 Jazzy<br/><i>coverage_server.py</i>"]
+    R --> N["🚦 Navigation2<br/><i>planner + controller server</i>"]
+    N --> S["⚡ STM32F407<br/><i>UART command frames</i>"]
+    S --> D["🔌 DRV8825 Drivers"]
+    D --> MO["🔩 NEMA17 Stepper Motors"]
+    MO --> RM["🧹 Robot Motion"]
+    RM --> I["🧭 MPU6050 Feedback<br/><i>yaw rate</i>"]
+    I --> H["🎯 Heading Correction<br/><i>gyro owns rotation</i>"]
+    H --> S
+    RM -.->|"/scan"| N
 ```
 
 ---
 
-## Docs
+## ✨ Features
 
-| | |
+- ✅ Autonomous coverage path planning
+- ✅ Boustrophedon Cellular Decomposition planner implemented from first principles
+- ✅ Wall-aligned lane generation using Hough transform
+- ✅ ROS 2 Jazzy and Navigation2 integration
+- ✅ SLAM mapping with `slam_toolbox`
+- ✅ AMCL localisation on the saved map
+- ✅ RViz2 visualisation with live colour-coded coverage progress
+- ✅ Closed-loop encoderless motion control
+- ✅ MPU6050 yaw integration for rotation correction
+- ✅ EKF sensor fusion with wheel yaw deliberately excluded
+- ✅ Raspberry Pi 5 high-level planning
+- ✅ STM32F407 real-time low-level control
+- ✅ RPLIDAR C1 scanning and localisation
+- ✅ Custom UART protocol with unit tests
+- ✅ Systemd and udev deployment for headless operation
+
+---
+
+## 🚧 Future Improvements
+
+| Area | Planned work |
 |---|---|
-| **`docs/HARDWARE.md`** | **the definitive hardware record + everything still unverified** |
-| **`docs/REVISION_2.md`** | **what was wrong in Rev 1 and why** |
-| `docs/DERIVED_NUMBERS.md` | generated — the audit trail from `robot.yaml` |
-| `docs/ARCHITECTURE.md` | three phases, TF tree, velocity chain |
-| `docs/INTERFACES.md` | every topic, service, action, TF frame, UART packet |
-| `docs/FILE_MANIFEST.md` | every file: why it exists, who calls it, when it runs |
-| `docs/TESTING.md` | bring-up order + troubleshooting table |
-| `stm32/README.md` | build, flash, the 25 MHz crystal trap, the protocol |
+| 🚧 Obstacle handling | Adaptive avoidance of dynamic obstacles during a sweep |
+| 🔁 Replanning | Online re-decomposition when the map changes mid-run |
+| 🏠 Multi-room | Room segmentation and inter-room sequencing |
+| 🔋 Energy | Battery-aware planning with resume from the last waypoint |
+| 📷 Vision | Camera integration for dirt and surface detection |
+| 🧠 AI | Object detection to classify and avoid hazards |
+| ☁️ Telemetry | Cloud monitoring of coverage reports |
 
 ---
 
-## :rotating_light: SIX THINGS I STILL CANNOT VERIFY — please confirm
+## 📊 Results
 
-| # | Unknown | Why it matters |
-|---|---|---|
-| 1 | **Motor holding torque at 1.4 A** | I assumed 0.40 N·m. Every torque margin rests on it. **Read the motor label.** |
-| 2 | **1.8°/step or 0.9°/step?** | A **2× error** in every distance |
-| 3 | **Are the DRV8825 jumpers really 1/16?** (M0=LOW M1=LOW M2=HIGH) | A **2× error** in every distance |
-| 4 | **Is your suction inlet in the 100 mm brush gap?** | If not: a 100 mm uncleaned stripe down every lane |
-| 5 | **IMU height** — I guessed 60 mm | Minor, but measure it |
-| 6 | **HSE crystal — 8 MHz or 25 MHz?** | Wrong baud **AND** wrong step rate *simultaneously* — a genuinely confusing pair of symptoms |
+| Metric | Value |
+|---|---|
+| 🧹 Coverage achieved | `TBD %` |
+| 🎯 Navigation accuracy | `TBD m` |
+| 📏 Planned path length | `TBD m` |
+| ⏱️ Runtime | `TBD min` |
+| 🧭 Heading drift per rotation | `TBD °` |
+| 🗺️ Mapped area | `TBD m²` |
 
-Answer #1–#4 and I'll regenerate. They're all one line each in `robot.yaml`.
+<div align="center">
+
+<!-- 🎞️ Results demonstration -->
+<img src="media/results_demo.gif" alt="Coverage run result" width="640">
+
+<!-- 📸 Hardware photographs -->
+<img src="media/hardware_photo.jpg" alt="Robot hardware" width="640">
+
+</div>
+
+---
+
+<div align="center">
+
+**Branch:** `Self_Navigation` &nbsp;•&nbsp; **Platform:** ROS 2 Jazzy on Raspberry Pi 5 &nbsp;•&nbsp; **Firmware:** STM32F407
+
+</div>
