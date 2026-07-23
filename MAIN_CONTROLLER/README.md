@@ -1,4 +1,4 @@
-# minibot_fw — Main Controller Firmware (STM32F407VET6)
+# minibot_fw  Main Controller Firmware (STM32F407VET6)
 
 Firmware for the main controller of the **Smart Autonomous Floor Mopping Robot**.
 It runs on an STM32F407VET6 and owns four independent subsystems:
