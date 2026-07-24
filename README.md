@@ -255,9 +255,9 @@ flowchart TD
 
 <br><br>
 
-<img src="media/bcd_algorithm1.gif" alt="Robot following the boustrophedon cellularcoverage path" width="210">
+<img src="media/bcd_algorithm1.gif" alt="Robot following the boustrophedon cellularcoverage path" width="600">
 
-<sub>Robot following the boustrophedon cellular decomposition coverage algorithm</sub>
+<sub>Robot following the boustrophedon cellular decomposition coverage algorithm (on a different mapped area)</sub>
 
 
 </div>
