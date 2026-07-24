@@ -1,0 +1,92 @@
+<!--
+=============================================================================
+  navigate_through_poses_coverage.xml
+  Custom BT for the COVERAGE run. Used by bt_navigator for NavigateThroughPoses.
+
+  WHY NOT THE STOCK NAV2 TREE
+    The stock tree's recovery ladder ends in Spin + BackUp. On a cleaning robot
+    those are actively harmful:
+
+      * SPIN pushes the robot off the lane it is currently cleaning. Nav2 then
+        replans from the new pose and simply CONTINUES — so the remainder of
+        that lane is never swept. You get a clean-looking run with a stripe
+        missing, and nothing reports it.
+
+      * BACKUP drives BLIND. This robot has a forward-facing LIDAR and no rear
+        sensor. Backing up 30 cm into an unmapped chair leg is how you lose a
+        caster.
+
+    So the recovery here is deliberately conservative:
+      1. clear the costmaps (the usual cause is a stale obstacle from a person
+         who has since walked away)
+      2. WAIT (let a moving obstacle move)
+      3. a SHORT backup, only as a last resort, only 15 cm
+      4. give up on this chunk — coverage_server logs it, skips it, and carries
+         on. A skipped chunk is a small uncleaned patch. A spinning, blindly
+         reversing robot is a broken robot.
+
+  RETRIES
+    6 replans before recovery. Coverage waypoints sit ~3 cm outside the lethal
+    ring, so a transient costmap update can briefly make one look unreachable.
+    Replanning almost always fixes it without any recovery at all.
+=============================================================================
+-->
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="30" name="NavigateRecovery">
+
+      <PipelineSequence name="NavigateWithReplanning">
+
+        <!-- Replan at 1 Hz. Cheap: NavFn on a 5 cm grid. -->
+        <RateController hz="1.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathThroughPoses">
+            <ReactiveSequence>
+              <RemovePassedGoals input_goals="{goals}" output_goals="{goals}"
+                                 radius="0.15"/>
+              <ComputePathThroughPoses goals="{goals}" path="{path}"
+                                       planner_id="GridBased"
+                                       error_code_id="{compute_path_error_code}"/>
+            </ReactiveSequence>
+            <ClearEntireCostmap name="ClearGlobalCostmap-Context"
+                                service_name="global_costmap/clear_entirely_global_costmap"/>
+          </RecoveryNode>
+        </RateController>
+
+        <RecoveryNode number_of_retries="1" name="FollowPath">
+          <FollowPath path="{path}" controller_id="FollowPath"
+                      error_code_id="{follow_path_error_code}"/>
+          <ClearEntireCostmap name="ClearLocalCostmap-Context"
+                              service_name="local_costmap/clear_entirely_local_costmap"/>
+        </RecoveryNode>
+
+      </PipelineSequence>
+
+      <!-- ===================== RECOVERY LADDER ===================== -->
+      <ReactiveFallback name="RecoveryFallback">
+
+        <!-- If a new goal arrives, abandon recovery immediately. -->
+        <GoalUpdated/>
+
+        <RoundRobin name="RecoveryActions">
+
+          <!-- 1. Stale obstacle? Clear and retry. Costs nothing, fixes most. -->
+          <Sequence name="ClearingActions">
+            <ClearEntireCostmap name="ClearLocalCostmap-Subtree"
+                                service_name="local_costmap/clear_entirely_local_costmap"/>
+            <ClearEntireCostmap name="ClearGlobalCostmap-Subtree"
+                                service_name="global_costmap/clear_entirely_global_costmap"/>
+          </Sequence>
+
+          <!-- 2. A person walked in front of it. Let them leave. -->
+          <Wait wait_duration="5.0"/>
+
+          <!-- 3. LAST RESORT. 15 cm, slow. NO Spin: spinning abandons the lane
+                  mid-sweep and leaves an uncleaned stripe that nothing reports. -->
+          <BackUp backup_dist="0.15" backup_speed="0.05"/>
+
+        </RoundRobin>
+      </ReactiveFallback>
+
+    </RecoveryNode>
+  </BehaviorTree>
+</root>

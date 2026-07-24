@@ -1,0 +1,9 @@
+build/
+install/
+log/
+__pycache__/
+*.pyc
+*.bak
+*.bak_*
+stm32/Debug/
+stm32/Release/

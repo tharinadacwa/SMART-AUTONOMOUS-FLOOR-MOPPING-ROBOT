@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!-- ===========================================================================
+     imu.xacro : MPU6050.   [REVISION 2]
+
+     Height, like the LIDAR, is measured from the GROUND and converted:
+         imu_z = imu_height_from_ground - wheel_radius
+               = 0.060 - 0.0336
+               = 0.0264 m
+
+     !! I AM GUESSING 0.060 m FOR THE IMU HEIGHT. MEASURE IT. !!
+     It matters less than the LIDAR (the EKF only uses yaw RATE, which is
+     identical everywhere on a rigid body), but get it right anyway.
+
+     MOUNT IT FLAT AND BOLT IT DOWN HARD. A gyro on a flexible standoff measures
+     the standoff flexing. Keep it away from the DRV8825s and the motor wires —
+     those switch amps at 20 kHz right next to a sensor you are about to trust
+     with your heading.
+=========================================================================== -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:property name="imu_z" value="0.0264"/>
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child  link="imu_link"/>
+    <origin xyz="0.0 0.0 ${imu_z}" rpy="0 0 0"/>
+  </joint>
+
+  <link name="imu_link">
+    <visual>
+      <geometry><box size="0.021 0.016 0.003"/></geometry>
+      <material name="cyan"/>
+    </visual>
+  </link>
+
+</robot>

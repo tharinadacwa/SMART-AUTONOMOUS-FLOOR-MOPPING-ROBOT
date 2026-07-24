@@ -1,0 +1,99 @@
+# =============================================================================
+#  ekf.yaml -- robot_localization: step-count odometry + MPU6050 gyro.
+#
+#  WHO RUNS IT   minibot_bringup/robot.launch.py -> ekf_node
+#  INPUTS        /diff_drive_controller/odom   (wheel/step odometry)
+#                /imu/data                     (from imu_filter_madgwick)
+#  OUTPUTS       /odom  (nav_msgs/Odometry)  AND the odom -> base_link TF
+#
+#  ### THIS NODE, AND ONLY THIS NODE, PUBLISHES odom -> base_link ###
+#    diff_drive_controller : enable_odom_tf = false
+#    imu_filter_madgwick   : publish_tf     = false
+#  Two publishers on one TF edge makes the robot flicker between two poses in
+#  RViz and makes Nav2's costmaps jitter. If you see that, this is the cause.
+# =============================================================================
+
+ekf_filter_node:
+  ros__parameters:
+
+    frequency: 50.0
+    sensor_timeout: 0.2
+    two_d_mode: true              # ground robot: lock z, roll, pitch
+
+    publish_tf: true
+    publish_acceleration: false
+
+    map_frame: map                # unused here; AMCL owns map -> odom
+    odom_frame: odom
+    base_link_frame: base_link
+    world_frame: odom             # odom, NOT map. This is the SMOOTH LOCAL
+                                  # estimate. Nav2's local costmap depends on it
+                                  # being continuous -- AMCL's jumps belong on
+                                  # the map->odom edge, not here.
+
+    transform_time_offset: 0.0
+    transform_timeout: 0.0
+    print_diagnostics: true
+    debug: false
+
+    # ---- odom0: wheel/step odometry ---------------------------------------
+    #  Order of the 15 booleans:
+    #    x     y      z
+    #    roll  pitch  yaw
+    #    vx    vy     vz
+    #    vroll vpitch vyaw
+    #    ax    ay     az
+    #
+    #  We take vx (TRUSTWORTHY -- it is a literal count of step pulses) and vyaw
+    #  (WEAK -- it is a step count divided by a wheel_separation you measured
+    #  with a ruler). We deliberately do NOT fuse absolute x/y/yaw from the
+    #  wheels: that would re-inject their accumulated drift as if it were a
+    #  fresh measurement, which is exactly how you build a filter that is
+    #  confidently wrong.
+    odom0: /diff_drive_controller/odom
+    odom0_config: [false, false, false,
+                   false, false, false,
+                   true,  false, false,
+                   false, false, false,
+                   false, false, false]
+    odom0_queue_size: 10
+    odom0_differential: false
+    odom0_relative: false
+    odom0_nodelay: true
+
+    # ---- imu0: MPU6050 via Madgwick ---------------------------------------
+    #  Yaw is fused DIFFERENTIALLY (we use the CHANGE in yaw, not its absolute
+    #  value). With no magnetometer, Madgwick's absolute yaw is arbitrary at
+    #  startup and drifts slowly -- so its absolute value is meaningless, but its
+    #  CHANGE is gold. vyaw (raw gyro z) is the real prize: it measures the
+    #  chassis rotating, independent of every wheel-related error term.
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  false, false, false,
+                  false, false, false,
+                  false, false, true,
+                  false, false, false]
+    imu0_queue_size: 20
+    imu0_differential: true
+    imu0_relative: false
+    imu0_nodelay: true
+    imu0_remove_gravitational_acceleration: true
+
+    # Process noise. Raise a diagonal entry to say "this state can change faster
+    # than my model thinks" -> the filter leans harder on the sensors.
+    # Order: x y z roll pitch yaw vx vy vz vroll vpitch vyaw ax ay az
+    process_noise_covariance: [0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.03, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.04, 0.0,  0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.02, 0.0,  0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,  0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.01, 0.0,
+                               0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.015]

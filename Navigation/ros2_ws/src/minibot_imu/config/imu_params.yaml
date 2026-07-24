@@ -1,0 +1,26 @@
+# MPU6050 driver + Madgwick filter parameters.
+mpu6050_node:
+  ros__parameters:
+    i2c_bus: 1
+    i2c_address: 0x68
+    frame_id: imu_link
+    rate_hz: 100.0
+    calib_samples: 500
+    # Run `ros2 run minibot_imu imu_calibrate.py --axis-check` to determine this.
+    axis_map: ['x', 'y', 'z']
+    gyro_noise: 0.02      # rad/s  -- from imu_calibrate.py
+    accel_noise: 0.20     # m/s^2  -- from imu_calibrate.py
+    bias_warn_rad_s: 0.02
+
+imu_filter:
+  ros__parameters:
+    use_mag: false          # MPU6050 has no magnetometer
+    world_frame: enu
+    publish_tf: false       # <-- the EKF owns odom->base_link. Never two.
+    fixed_frame: odom
+    gain: 0.1               # lower = trust the gyro more, the accel less.
+                            # On a robot with vibrating motors right next to the
+                            # IMU, the accelerometer is the noisy one. 0.1 is a
+                            # deliberate lean toward the gyro.
+    orientation_stddev: 0.02
+    remove_gravity_vector: false

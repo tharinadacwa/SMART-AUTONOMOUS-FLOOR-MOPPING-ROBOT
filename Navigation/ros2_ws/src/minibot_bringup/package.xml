@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>minibot_bringup</name>
+  <version>1.0.0</version>
+  <description>Top-level launch, controller config, udev rules, systemd services, and bench-test tools.</description>
+  <maintainer email="you@example.com">minibot</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>minibot_description</exec_depend>
+  <exec_depend>minibot_hardware</exec_depend>
+  <exec_depend>minibot_imu</exec_depend>
+  <exec_depend>minibot_navigation</exec_depend>
+  <exec_depend>minibot_coverage</exec_depend>
+  <exec_depend>controller_manager</exec_depend>
+  <exec_depend>diff_drive_controller</exec_depend>
+  <exec_depend>joint_state_broadcaster</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>twist_mux</exec_depend>
+  <exec_depend>twist_stamper</exec_depend>
+  <exec_depend>diagnostic_aggregator</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+  <export><build_type>ament_cmake</build_type></export>
+</package>

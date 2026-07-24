@@ -1,0 +1,150 @@
+# =============================================================================
+#  robot.yaml -- THE SINGLE SOURCE OF TRUTH.   [REVISION 2 -- MEASURED HARDWARE]
+#
+#      python3 tools/generate_config.py
+#
+#  NEVER hand-edit a generated file. These numbers live in five places (STM32
+#  firmware, ros2_control, Nav2 controller_server, Nav2 velocity_smoother, the
+#  coverage planner). If any two disagree the strictest layer SILENTLY CLIPS the
+#  others -- and the planner then believes the robot went somewhere it did not.
+#
+#  ###########################################################################
+#  #  WHAT CHANGED IN REVISION 2, AND WHY IT MATTERS                         #
+#  #                                                                          #
+#  #  Rev 1 used wheel_radius 0.19 m and wheel_separation 0.30 m. BOTH WRONG. #
+#  #  Measured:                                                               #
+#  #      wheel   67.2 mm DIAMETER (with rubber)  -> radius 0.0336 m          #
+#  #      wheels  40 cm CENTRE-TO-CENTRE          -> separation 0.400 m       #
+#  #      wheels  41-42 cm OUTER SPAN             -> robot_radius 0.210 m     #
+#  #      lidar   25 cm above the GROUND                                      #
+#  #                                                                          #
+#  #  Rev 1 argued "5-20 RPM only makes sense with BIG wheels". The wheels are #
+#  #  small. So the correct conclusion was the OPPOSITE: the 20 RPM cap is the #
+#  #  suspect number, not the wheel size. See limits.max_wheel_rpm.            #
+#  ###########################################################################
+# =============================================================================
+
+geometry:
+  # --- MEASURED. Do not change without re-measuring. -----------------------
+  wheel_radius: 0.0336         # m. 67.2 mm DIAMETER with rubber.
+                               # MEASURE IT LOADED (robot weight on the wheel).
+                               # Rubber compresses ~1 mm under load; measuring
+                               # it unloaded is a silent 3% odometry error.
+  wheel_separation: 0.400      # m. CENTRE-to-CENTRE of the contact patches.
+                               # (Outer ends 41-42 cm; midpoints 40 cm. The
+                               # kinematics needs the MIDPOINT number.)
+
+  # !! THE WHEELS ARE THE WIDEST PART OF THE ROBOT !!
+  # Body is 380 mm across; wheels span 410-420 mm. Nav2 MUST plan against the
+  # widest extent or it will drive the WHEELS into walls it believes it clears.
+  robot_radius: 0.210          # m. HALF the 420 mm wheel span. NOT half the body.
+  body_radius: 0.190           # m. The chassis disc. Visual only.
+
+  # Height from the GROUND to the LIDAR scan plane. generate_config.py converts
+  # this into a base_link-relative z (base_link sits at the wheel axle, which is
+  # wheel_radius above the ground).
+  lidar_height_from_ground: 0.250
+  imu_height_from_ground: 0.060      # <-- I AM GUESSING. MEASURE IT.
+
+  # --- Drivetrain ----------------------------------------------------------
+  motor_steps_per_rev: 200     # 1.8 deg/step NEMA17. 400 if yours is 0.9 deg.
+                               # VERIFY: stm32_bench.py --verify-steps
+  microstepping: 16            # DRV8825 jumpers: M0=LOW  M1=LOW  M2=HIGH
+  gear_ratio: 1.0              # motor turns per WHEEL turn. Direct drive = 1.0
+
+mass:
+  robot_kg: 6.0
+  motor_holding_torque_nm: 0.40   # <-- UNVERIFIED. Typical NEMA17 42-34 @ 1.4 A.
+                                  # I do NOT have your motor's datasheet. Read the
+                                  # real number off the motor label before trusting
+                                  # the torque margin below.
+  rolling_resistance_coeff: 0.02  # hard floor. Carpet is 0.05-0.15.
+
+limits:
+  # ###########################################################################
+  #  THE 20 RPM CAP IS NOW THE SINGLE BIGGEST COST IN THE PROJECT.
+  #
+  #  With your REAL 33.6 mm wheels:
+  #     RPM    speed       step rate   % of pulse engine   49 m^2 flat
+  #      20   0.070 m/s     1066 sps        5.3%             ~95 min
+  #      40   0.141 m/s     2133 sps       10.7%             ~47 min
+  #      60   0.211 m/s     3200 sps       16.0%             ~31 min
+  #     100   0.352 m/s     5333 sps       26.7%             ~19 min
+  #
+  #  At 20 RPM the pulse engine is 5% used and the motors have ~12x torque margin
+  #  at 6 kg. The cap buys you nothing and costs you an hour per run.
+  #
+  #  LEFT AT 20 because that is what you specified and you have not said
+  #  otherwise. If it was a guess, change ONE NUMBER here, re-run
+  #  generate_config.py, and the entire stack retunes itself.
+  # ###########################################################################
+  max_wheel_rpm: 20.0
+  min_wheel_rpm: 5.0
+
+  accel_time_s: 0.50     # standstill -> max speed
+  jerk_time_s: 0.15      # 0 -> max acceleration. Rounds the S-curve corners.
+                         # NOT a nicety: the robot reverses direction at the end
+                         # of every lane (~34x per room) and a torque STEP is
+                         # exactly the impulse that makes a stepper skip.
+
+coverage:
+  # --- YOUR REAL CLEANING HEAD ---------------------------------------------
+  #  Two brushes, 100 mm diameter, centres 200 mm apart:
+  #      left  brush covers -0.150 .. -0.050
+  #      right brush covers +0.050 .. +0.150
+  #      TOTAL SWEPT WIDTH = 0.300 m
+  #      GAP IN THE MIDDLE = 0.100 m
+  #
+  #  !!! CONFIRM THIS !!!  The 100 mm middle gap is fine ONLY IF your suction
+  #  inlet sits there (side brushes sweeping debris inward is the standard
+  #  design). If there is nothing in the middle, you have a 100 mm uncleaned
+  #  stripe down the centre of EVERY lane, and no path planner can fix it.
+  brush_diameter: 0.10
+  brush_separation: 0.20
+  cleaning_head_width: 0.30    # = brush_separation + brush_diameter
+
+  # Your spec said 0.19 m lanes. Against a 0.30 m head that is 11 cm of overlap
+  # on every pass -- 37% of the floor cleaned twice. 0.25 m still leaves 5 cm of
+  # overlap and cuts run time ~25%. KEPT AT 0.19 because you specified 0.19.
+  lane_spacing: 0.19
+
+  safety_margin: 0.03    # clearance beyond robot_radius.
+                         # Drop to 0.01 and the uncleaned wall strip shrinks
+                         # from 9 cm to 7 cm, at the cost of wall clearance.
+  waypoint_spacing: 0.15
+  min_segment_length: 0.25
+  min_region_area: 0.60
+  do_edge_pass: true     # THIS is what cleans the corners. Do not disable.
+
+serial:
+  device: /dev/ttyAMA0   # Pi 5 GPIO UART: PA9/PA10 <-> GPIO14/15, needs dtoverlay=uart0-pi5
+  baud_rate: 115200
+  feedback_hz: 50
+  cmd_timeout_ms: 500    # no command -> ramp to stop, STAY energised (holding
+                         # torque; the robot must not roll away on a slope)
+  idle_disable_ms: 10000 # long idle -> drop the coils. A stationary stepper at
+                         # full current is a 10 W heater doing no work.
+
+firmware:
+  isr_hz: 40000          # TIM7 step-engine tick
+  ramp_hz: 1000          # motion-profile update rate
+  left_dir_invert: 1     # robot spins instead of driving? flip exactly ONE
+  right_dir_invert: 0    # robot drives backwards?         flip BOTH
+
+sensors:
+  lidar_device: /dev/minibot_lidar
+  lidar_max_range: 12.0
+  lidar_min_range: 0.15
+  imu_i2c_bus: 1
+  imu_i2c_address: 0x68
+  imu_rate_hz: 100
+  # Chip flat, silkscreen up, +X arrow forward -> ['x','y','z']
+  # Upside down                                -> ['x','-y','-z']
+  # DETERMINE IT: ros2 run minibot_imu imu_calibrate.py --axis-check
+  imu_axis_map: ['x', '-y', '-z']
+
+dock:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+  frame: map

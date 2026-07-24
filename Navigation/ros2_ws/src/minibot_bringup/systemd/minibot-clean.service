@@ -1,0 +1,36 @@
+# =============================================================================
+#  minibot-clean.service -- the autonomy layer (AMCL + Nav2 + coverage).
+#
+#  Deliberately NOT enabled by default and NOT auto-starting the coverage run.
+#  A robot that begins driving the instant it is powered on, before anyone has
+#  confirmed AMCL actually localized, is a robot that drives into a wall.
+#
+#  Start it manually once you are happy:
+#    sudo systemctl start minibot-clean
+#    ros2 service call /coverage/start std_srvs/srv/Trigger
+#
+#  If you DO want fully hands-off operation, set auto_start:=true below -- but
+#  only after you have added a reliable initial-pose mechanism (a dock with a
+#  known pose, or set_initial_pose in AMCL).
+# =============================================================================
+[Unit]
+Description=Minibot autonomy (AMCL + Nav2 + coverage)
+After=minibot-robot.service
+Requires=minibot-robot.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/ros2_ws
+Environment="ROS_DOMAIN_ID=1"
+
+ExecStart=/bin/bash -c 'source /opt/ros/jazzy/setup.bash && source /home/pi/ros2_ws/install/setup.bash && exec ros2 launch minibot_bringup clean.launch.py map:=/home/pi/ros2_ws/maps/home.yaml path:=/home/pi/ros2_ws/maps/home_coverage_path.yaml auto_start:=false'
+
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=20
+
+[Install]
+WantedBy=multi-user.target

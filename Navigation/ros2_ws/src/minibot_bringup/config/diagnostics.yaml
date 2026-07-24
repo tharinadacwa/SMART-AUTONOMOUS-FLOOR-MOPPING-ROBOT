@@ -1,0 +1,13 @@
+# diagnostic_aggregator: groups /diagnostics into a tree for rqt_robot_monitor.
+diagnostic_aggregator:
+  ros__parameters:
+    path: minibot
+    analyzers:
+      sensors:
+        type: 'diagnostic_aggregator/GenericAnalyzer'
+        path: Sensors
+        contains: ['MPU6050', 'lidar']
+      motion:
+        type: 'diagnostic_aggregator/GenericAnalyzer'
+        path: Motion
+        contains: ['coverage_server', 'controller']
