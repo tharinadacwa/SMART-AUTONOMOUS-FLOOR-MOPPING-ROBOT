@@ -14,7 +14,7 @@
 
 <br>
 
-<img src="Navigation/media/project_overview.png" alt="SAFMR system overview" width="760">
+<img src="Self_Navigation/media/project_overview.png" alt="SAFMR system overview" width="760">
 
 <sub><b>Team MindFlayers</b></sub>
 
@@ -188,7 +188,7 @@ integrated view containing all of them.
 
 ```
 SAFMR/
-├── Navigation/                  ROS 2 Jazzy stack and coverage planner
+├── Self_Navigation/                  ROS 2 Jazzy stack and coverage planner
 │   ├── bcd_coverage.py            standalone BCD planner (offline)
 │   ├── robot.yaml                 SINGLE SOURCE OF TRUTH for physical parameters
 │   ├── tools/generate_config.py   regenerates every derived config from robot.yaml
@@ -223,10 +223,10 @@ SAFMR/
 
 ## Subsystem 1: Navigation and coverage planning
 
-> Full documentation: [`Navigation/README.md`](Navigation/README.md)
+> Full documentation: [`Self_Navigation/README.md`](Self_Navigation/README.md)
 
 <div align="center">
-<img src="Navigation/media/rviz2_visualization.png" alt="RViz2 navigation view with coverage waypoints" width="700">
+<img src="Self_Navigation/media/rviz2_visualization.png" alt="RViz2 navigation view with coverage waypoints" width="700">
 <br><sub>RViz2: map, costmaps, TF tree and colour-coded coverage waypoints</sub>
 </div>
 
@@ -271,7 +271,7 @@ distance, and confines turns to lane ends.
   run parallel to the walls, not to the image axes.
 
 <div align="center">
-<img src="Navigation/media/coverage_path2.png" alt="BCD coverage path over a saved map" width="620">
+<img src="Self_Navigation/media/coverage_path2.png" alt="BCD coverage path over a saved map" width="620">
 <br><sub>A generated coverage path: edge pass plus serpentine fill</sub>
 </div>
 
@@ -385,8 +385,8 @@ documented in the subsystem README and defined in `edr_Lipo_1v1/Core/Inc/battery
 
 ## The numbers that everything derives from
 
-[`Navigation/robot.yaml`](Navigation/robot.yaml) is the single source of truth. Running
-`python3 Navigation/tools/generate_config.py` regenerates every derived configuration
+[`Self_Navigation/robot.yaml`](Self_Navigation/robot.yaml) is the single source of truth. Running
+`python3 Self_Navigation/tools/generate_config.py` regenerates every derived configuration
 from it.
 
 This matters because the same physical constants live in **five** places: the STM32
@@ -557,13 +557,13 @@ the checkpoint is kept), `/coverage/skip` for when the robot is wedged, and
 
 | Document | Covers |
 |---|---|
-| [`Navigation/README.md`](Navigation/README.md) | Coverage planning, SLAM, the full ROS 2 stack, file-by-file manifest |
-| [`Navigation/docs/ARCHITECTURE.md`](Navigation/docs/ARCHITECTURE.md) | Node graph, the three phases, TF ownership |
-| [`Navigation/docs/HARDWARE.md`](Navigation/docs/HARDWARE.md) | Measured geometry, wiring, the wall-strip and brush-gap analyses |
-| [`Navigation/docs/INTERFACES.md`](Navigation/docs/INTERFACES.md) | Every topic, service, action, TF frame and UART packet |
-| [`Navigation/docs/DERIVED_NUMBERS.md`](Navigation/docs/DERIVED_NUMBERS.md) | How every velocity and limit is derived, plus the Revision 2 correction |
-| [`Navigation/docs/TESTING.md`](Navigation/docs/TESTING.md) | Verification procedure |
-| [`Navigation/docs/REVISION_2.md`](Navigation/docs/REVISION_2.md) | What changed when the hardware was actually measured |
+| [`Self_Navigation/README.md`](Self_Navigation/README.md) | Coverage planning, SLAM, the full ROS 2 stack, file-by-file manifest |
+| [`Self_Navigation/docs/ARCHITECTURE.md`](Self_Navigation/docs/ARCHITECTURE.md) | Node graph, the three phases, TF ownership |
+| [`Self_Navigation/docs/HARDWARE.md`](Self_Navigation/docs/HARDWARE.md) | Measured geometry, wiring, the wall-strip and brush-gap analyses |
+| [`Self_Navigation/docs/INTERFACES.md`](Self_Navigation/docs/INTERFACES.md) | Every topic, service, action, TF frame and UART packet |
+| [`Self_Navigation/docs/DERIVED_NUMBERS.md`](Self_Navigation/docs/DERIVED_NUMBERS.md) | How every velocity and limit is derived, plus the Revision 2 correction |
+| [`Self_Navigation/docs/TESTING.md`](Self_Navigation/docs/TESTING.md) | Verification procedure |
+| [`Self_Navigation/docs/REVISION_2.md`](Self_Navigation/docs/REVISION_2.md) | What changed when the hardware was actually measured |
 | [`MAIN_CONTROLLER/README.md`](MAIN_CONTROLLER/README.md) | Firmware architecture, pin map, protocol, bring-up checklist, troubleshooting |
 | [`Charging_Sub_System/README.md`](Charging_Sub_System/README.md) | Charger hardware, firmware, protection thresholds |
 
@@ -634,13 +634,13 @@ torque margin claim depends on the first of these.
 
 **Cross-subsystem documentation links are broken after the reorganisation.**
 `MAIN_CONTROLLER/README.md` links to `WIRING_L298N.md` and `WIRING_PA12_PUMP.md` as
-siblings, but those files live in `firmware_Main/minibot_fw/`. `Navigation/README.md`
+siblings, but those files live in `firmware_Main/minibot_fw/`. `Self_Navigation/README.md`
 still references an `stm32/` folder that has been removed from that branch in favour of
 `MAIN_CONTROLLER/`. Both need their paths updated.
 
 **The firmware README overstates what is missing.** It lists `robot.yaml`,
 `tools/generate_config.py` and `stm32_bench.py` as absent. All three exist, in
-`Navigation/`. That note was written before the branches were integrated and should now
+`Self_Navigation/`. That note was written before the branches were integrated and should now
 be replaced with cross-references.
 
 **Build artifacts are committed.** `MAIN_CONTROLLER/firmware_Main/minibot_fw/Debug/`
