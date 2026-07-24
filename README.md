@@ -249,15 +249,15 @@ flowchart TD
 <div align="center">
 
 <!-- 🎞️ Robot following the coverage path -->
-<img src="media/bcd_algorithm.gif" alt="Robot following the boustrophedon coverage path" width="210">
+<img src="media/bcd_algorithm.gif" alt="Real robot navigation " width="210">
 
-<sub>Robot executing the boustrophedon coverage path on hardware</sub>
+<sub>Real robot navigation </sub>
 
 <br><br>
 
-<img src="media/bcd_algorithm2.gif" alt="Robot following the boustrophedon coverage path" width="210">
+<img src="media/bcd_algorithm1.gif" alt="Robot following the boustrophedon cellularcoverage path" width="210">
 
-<sub>Robot executing the boustrophedon coverage path on hardware</sub>
+<sub>Robot following the boustrophedon cellular decomposition coverage algorithm</sub>
 
 
 </div>
