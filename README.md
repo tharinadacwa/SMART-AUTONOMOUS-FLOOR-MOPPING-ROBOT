@@ -249,7 +249,7 @@ flowchart TD
 <div align="center">
 
 <!-- 🎞️ Robot following the coverage path -->
-<img src="media/bcd_coverage.gif" alt="Robot following the boustrophedon coverage path" width="640">
+<img src="media/bcd_algorithm.gif" alt="Robot following the boustrophedon coverage path" width="640">
 
 <sub>Robot executing the boustrophedon coverage path on hardware</sub>
 
