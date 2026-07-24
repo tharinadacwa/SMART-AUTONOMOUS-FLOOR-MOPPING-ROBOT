@@ -253,6 +253,12 @@ flowchart TD
 
 <sub>Robot executing the boustrophedon coverage path on hardware</sub>
 
+<br><br>
+
+<img src="media/bcd_algorithm2.gif" alt="Robot following the boustrophedon coverage path" width="210">
+
+<sub>Robot executing the boustrophedon coverage path on hardware</sub>
+
 
 </div>
 
