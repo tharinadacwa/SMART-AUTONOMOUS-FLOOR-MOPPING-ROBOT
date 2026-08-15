@@ -86,7 +86,7 @@ It is split into two parts - the **hardware** (Altium PCB) and the **firmware**
 | Charge controller | TI BQ25703A buck-boost, over I²C |
 | Charge output | XT60 connector |
 | Balance connector | JST-XH |
-| Supported packs | 1S – 3S *(per firmware cell-count bitmasks)* |
+| Supported packs | 1S – 4S *(per firmware cell-count bitmasks)* |
 | Cell monitoring | STM32G0 ADC via resistor dividers |
 | Balancing | Passive, per-cell *(LiPow reference: PFET discharge)* |
 | Max power *(reference)* | Up to 100 W / 6 A - *LiPow reference; verify for this build* |
